@@ -69,6 +69,7 @@ label.f{display:block;margin:10px 0 4px;font-weight:700;font-size:12.5px}
   <span style="flex:1"></span>
   <span id="syncst" class="sub"></span>
   <span id="who" style="font-size:13px"></span>
+  <button class="b" id="pwBtn" style="display:none;padding:3px 10px" onclick="openPw()">비밀번호 변경</button>
   <button class="b" id="logoutBtn" style="display:none;padding:3px 10px" onclick="logout()">로그아웃</button>
 </header>
 <div id="login" style="display:none;position:fixed;inset:0;z-index:60;background:#f4f6fa;align-items:center;justify-content:center">
@@ -822,6 +823,22 @@ async function loadMe(){
   if(!me.active){sessSave(null);$("#lg-err").textContent="정지된 계정입니다. 관리자에게 문의하세요.";return false;}
   ME=me; try{localStorage.setItem("fcapp.me",JSON.stringify(me));}catch(e){} return true;
 }
+function openPw(){
+  $("#modalBox").innerHTML=`<h2>비밀번호 변경</h2><p class="hint">처음 받은 임시 비밀번호는 꼭 바꿔서 사용하세요. (8자 이상)</p>
+   <label class="f">새 비밀번호</label><input type="password" id="pw-a" style="width:100%" autocomplete="new-password">
+   <label class="f">새 비밀번호 확인</label><input type="password" id="pw-b" style="width:100%" autocomplete="new-password">
+   <div class="row" style="margin-top:14px;justify-content:flex-end"><button class="b" onclick="closeModal()">취소</button><button class="b pri" onclick="changePw()">변경</button></div>`;
+  $("#modal").style.display="flex";
+}
+async function changePw(){
+  const a=$("#pw-a").value, b=$("#pw-b").value;
+  if(a.length<8){toast("비밀번호는 8자 이상이어야 합니다");return;}
+  if(a!==b){toast("두 비밀번호가 서로 다릅니다");return;}
+  try{const r=await sbFetch("/auth/v1/user",{method:"PUT",body:JSON.stringify({password:a})});
+    if(r.ok){closeModal();toast("비밀번호를 변경했습니다. 다음 로그인부터 새 비밀번호를 쓰세요");}
+    else{const j=await r.json().catch(()=>({}));toast(/same|different/i.test(j.msg||j.message||"")?"이전과 다른 비밀번호를 입력하세요":"변경하지 못했습니다. 다시 로그인한 뒤 시도하세요");}
+  }catch(e){toast("서버에 연결할 수 없습니다");}
+}
 function logout(){sessSave(null);try{localStorage.removeItem("fcapp.me");}catch(e){}location.reload();}
 function migrateLogs(){
   S.logs.forEach(l=>{ if(l.synced===undefined){
@@ -840,7 +857,7 @@ async function enter(){
   migrateLogs();
   if(ME.role!=="fc"&&!PAGES.some(p=>p[0]==="admin"))PAGES.splice(PAGES.findIndex(p=>p[0]==="dash")+1,0,["admin","관리자"]);
   $("#who").textContent=`${ME.name||ME.emp_no}${ME.team?" · "+ME.team:""}${ME.role==="admin"?" (단장)":ME.role==="manager"?" (팀장)":""}`;
-  $("#logoutBtn").style.display="";
+  $("#logoutBtn").style.display=""; $("#pwBtn").style.display="";
   page=ME.role==="fc"?"today":"admin"; nav(); render();
   await syncAll();
 }
