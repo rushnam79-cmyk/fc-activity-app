@@ -998,18 +998,19 @@ async function admStaff(){
    <p class="small">본인 계정의 역할·사용 여부는 바꿀 수 없습니다(관리자 권한을 잃는 실수 방지). 퇴사자는 '사용' 체크를 해제하면 로그인과 집계에서 제외되고 기록은 보관됩니다.</p>`;
 }
 async function bulkStaff(){
-  const lines=$("#bulk").value.replace(/\r/g,"").split("\n").map(l=>l.trim()).filter(Boolean); let ok=0; const bad=[];
+  const lines=$("#bulk").value.replace(/\r/g,"").split("\n").map(l=>l.trim()).filter(Boolean); let ok=0, skip=0; const bad=[];
   for(const l of lines){
     const c=(l.includes("\t")?l.split("\t"):l.split(",")).map(x=>x.trim()); if(c[0]==="사번")continue;
     const emp=c[0], body={name:c[1]||"",team:c[2]||""}, rl={FC:"fc",fc:"fc","팀장":"manager"}[c[3]];
     if(rl&&emp!==ME.emp_no)body.role=rl;
-    if(!emp||!body.name){bad.push(l);continue;}
+    if(emp&&!body.name){skip++;continue;}   // 이름이 비어 있는 줄은 건너뜀 (양식에 일부만 채웠을 때)
+    if(!emp){bad.push(l);continue;}
     try{const r=await sbFetch("/rest/v1/profiles?emp_no=eq."+encodeURIComponent(emp),{method:"PATCH",headers:{Prefer:"return=representation"},body:JSON.stringify(body)});
       if(r.ok){const j=await r.json().catch(()=>[]); if(j.length)ok++; else bad.push(emp+" (없는 사번)");} else bad.push(emp);}
     catch(e){bad.push(emp+" (연결 오류)");}
   }
   toast(`${ok}명 저장했습니다`+(bad.length?` · 실패 ${bad.length}건`:"")); await admStaff();
-  const el=$("#bulk-res"); if(el)el.textContent=`${ok}명 저장`+(bad.length?` · 실패 ${bad.length}건: ${bad.slice(0,6).join(", ")}`:"")+" · 위 현황판 이름은 기간 버튼을 누르면 갱신됩니다";
+  const el=$("#bulk-res"); if(el)el.textContent=`${ok}명 저장`+(skip?` · 이름 비어 있어 건너뜀 ${skip}줄`:"")+(bad.length?` · 실패 ${bad.length}건: ${bad.slice(0,6).join(", ")}`:"")+" · 위 현황판 이름은 기간 버튼을 누르면 갱신됩니다";
 }
 async function admStaffOld(){
   const r=await sbFetch("/rest/v1/profiles?select=*&order=team.asc,name.asc"); if(!r.ok)return; const ps=await r.json();
