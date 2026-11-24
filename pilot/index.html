@@ -975,7 +975,43 @@ function admCsv(){
   const rows=[["팀","이름","사번","접촉","통화·미팅","미팅","응답","리포트","연결","활동일","마지막기록","고객수","A미접촉"],...window.admFcs.map(f=>[f.team,f.name,f.emp_no,f.contacts,f.call_meet,f.meetings,f.ok,f.reports,f.links,f.active_days,f.last_date||"",f.a_total,f.a_untouched])];
   download(`직원별현황_${fmt(today())}.csv`,rows.map(r=>r.map(v=>`"${String(v==null?"":v).replace(/"/g,'""')}"`).join(",")).join("\r\n"),"text/csv");
 }
+function empKey(p){return [p.role==="admin"?0:1,/^\d+$/.test(p.emp_no)?+p.emp_no:1e9,String(p.emp_no)];}
+function staffRow(p){
+  const me=p.id===ME.id;
+  return `<tr><td>${esc(p.emp_no)}</td><td><input id="ps-n-${p.id}" value="${esc(p.name)}" style="width:110px"></td><td><input id="ps-t-${p.id}" value="${esc(p.team)}" style="width:90px"></td>
+   <td><select id="ps-r-${p.id}" ${me?"disabled":""}>${[["fc","FC"],["manager","팀장"],["admin","단장"]].map(([v,n])=>`<option value="${v}" ${p.role===v?"selected":""}>${n}</option>`).join("")}</select></td>
+   <td><input type="checkbox" id="ps-a-${p.id}" ${p.active?"checked":""} ${me?"disabled":""}></td><td><button class="b" onclick="saveStaff('${p.id}')">저장</button></td></tr>`;
+}
 async function admStaff(){
+  const r=await sbFetch("/rest/v1/profiles?select=*&limit=1000"); if(!r.ok)return; const all=await r.json();
+  const cmp=(a,b)=>{const x=empKey(a),y=empKey(b);return x[0]-y[0]||x[1]-y[1]||x[2].localeCompare(y[2]);};
+  const act=all.filter(p=>p.active).sort(cmp), off=all.filter(p=>!p.active).sort(cmp);
+  const head="<tr><th>사번</th><th>이름</th><th>팀</th><th>역할</th><th>사용</th><th></th></tr>";
+  $("#adm-staff").innerHTML=`<div class="card" style="margin-top:8px"><b>이름·팀 한 번에 입력</b>
+    <p class="small" style="margin:4px 0">엑셀에서 <b>사번 · 이름 · 팀</b> 3칸(선택: 4번째 칸에 FC 또는 팀장)을 복사해 아래에 붙여넣고 [일괄 저장]을 누르세요. 예) 1 → 홍길동 → A팀</p>
+    <textarea id="bulk" rows="5" placeholder="1&#9;홍길동&#9;A팀&#10;2&#9;김영희&#9;A팀"></textarea>
+    <div class="row" style="margin-top:6px"><button class="b pri" onclick="bulkStaff()">일괄 저장</button><span id="bulk-res" class="small"></span></div></div>
+   <p class="small" style="margin:8px 0 4px">사용 중인 계정 ${act.length}명 · 한 명씩 고칠 때는 줄 끝 [저장]을 누르세요.</p>
+   <div class="tw"><table>${head}${act.map(staffRow).join("")}</table></div>
+   ${off.length?`<details class="card"><summary style="cursor:pointer"><b>예비·정지 계정 ${off.length}명</b> <span class="small">(필요할 때 '사용'을 체크해 저장하면 다시 쓸 수 있음)</span></summary><div class="tw" style="margin-top:8px"><table>${head}${off.map(staffRow).join("")}</table></div></details>`:""}
+   <details class="card"><summary style="cursor:pointer"><b>새 직원 계정 만드는 방법</b></summary><ol style="line-height:1.8;margin:8px 0 0;padding-left:18px"><li>Supabase 화면 → Authentication → Users → <b>Add user → Create new user</b></li><li>Email에 <b>사번${esc(EMAIL_DOMAIN)}</b>, 임시 비밀번호 입력, <b>Auto Confirm User</b> 체크</li><li>만들면 위 표에 자동으로 나타납니다.</li></ol></details>
+   <p class="small">본인 계정의 역할·사용 여부는 바꿀 수 없습니다(관리자 권한을 잃는 실수 방지). 퇴사자는 '사용' 체크를 해제하면 로그인과 집계에서 제외되고 기록은 보관됩니다.</p>`;
+}
+async function bulkStaff(){
+  const lines=$("#bulk").value.replace(/\r/g,"").split("\n").map(l=>l.trim()).filter(Boolean); let ok=0; const bad=[];
+  for(const l of lines){
+    const c=(l.includes("\t")?l.split("\t"):l.split(",")).map(x=>x.trim()); if(c[0]==="사번")continue;
+    const emp=c[0], body={name:c[1]||"",team:c[2]||""}, rl={FC:"fc",fc:"fc","팀장":"manager"}[c[3]];
+    if(rl&&emp!==ME.emp_no)body.role=rl;
+    if(!emp||!body.name){bad.push(l);continue;}
+    try{const r=await sbFetch("/rest/v1/profiles?emp_no=eq."+encodeURIComponent(emp),{method:"PATCH",headers:{Prefer:"return=representation"},body:JSON.stringify(body)});
+      if(r.ok){const j=await r.json().catch(()=>[]); if(j.length)ok++; else bad.push(emp+" (없는 사번)");} else bad.push(emp);}
+    catch(e){bad.push(emp+" (연결 오류)");}
+  }
+  toast(`${ok}명 저장했습니다`+(bad.length?` · 실패 ${bad.length}건`:"")); await admStaff();
+  const el=$("#bulk-res"); if(el)el.textContent=`${ok}명 저장`+(bad.length?` · 실패 ${bad.length}건: ${bad.slice(0,6).join(", ")}`:"")+" · 위 현황판 이름은 기간 버튼을 누르면 갱신됩니다";
+}
+async function admStaffOld(){
   const r=await sbFetch("/rest/v1/profiles?select=*&order=team.asc,name.asc"); if(!r.ok)return; const ps=await r.json();
   $("#adm-staff").innerHTML=`<h2 style="margin-top:18px">직원 관리</h2>
    <details class="card"><summary style="cursor:pointer"><b>새 직원 계정 만드는 방법</b></summary>
