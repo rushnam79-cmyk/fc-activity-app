@@ -1,0 +1,989 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>이관·수금 고객 FC활동관리</title>
+<style>
+:root{--bg:#f4f6fa;--card:#fff;--ink:#1c2333;--sub:#6b7488;--line:#e2e6ef;--brand:#1f3864;--brand2:#2f5597;
+--A:#f8cbad;--B:#ffe699;--C:#bdd7ee;--D:#c6e0b4;--E:#e7e7e7;--ok:#2e7d32;--bad:#c62828}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif;font-size:14px}
+header{background:var(--brand);color:#fff;padding:14px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+header h1{font-size:18px;margin:0}
+header .sub{opacity:.75;font-size:12px}
+nav{display:flex;gap:4px;background:#fff;border-bottom:1px solid var(--line);padding:0 12px;overflow-x:auto;position:sticky;top:0;z-index:5}
+nav button{border:0;background:none;padding:12px 14px;font:inherit;color:var(--sub);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+nav button.on{color:var(--brand);font-weight:700;border-bottom-color:var(--brand2)}
+main{max-width:1180px;margin:0 auto;padding:18px 16px 60px}
+h2{font-size:17px;margin:0 0 4px}
+.hint{color:var(--sub);font-size:12.5px;margin:0 0 14px;line-height:1.5}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:12px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.grid{display:grid;gap:12px}
+.g4{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.stat b{display:block;font-size:26px;color:var(--brand)}
+.stat span{color:var(--sub);font-size:12px}
+.badge{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:700;color:#333}
+.tA{background:var(--A)}.tB{background:var(--B)}.tC{background:var(--C)}.tD{background:var(--D)}.tE{background:var(--E)}
+button.b{border:1px solid var(--line);background:#fff;border-radius:7px;padding:6px 11px;font:inherit;cursor:pointer}
+button.b:hover{background:#eef2fb}
+button.pri{background:var(--brand2);color:#fff;border-color:var(--brand2)}
+button.pri:hover{background:var(--brand)}
+button.ok{background:#e8f5e9;border-color:#a5d6a7}
+button.no{background:#fdecea;border-color:#ef9a9a}
+button.sel{background:var(--brand2);color:#fff;border-color:var(--brand2)}
+input,select,textarea{font:inherit;border:1px solid #cfd5e3;border-radius:7px;padding:6px 8px;background:#fff}
+textarea{width:100%}
+table{width:100%;border-collapse:collapse;background:#fff}
+th,td{border-bottom:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+th{background:#f0f3f9;font-size:12.5px}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:#fff}
+.chip{border:1px solid var(--line);background:#fff;border-radius:99px;padding:4px 12px;cursor:pointer;font:inherit}
+.chip.on{background:var(--brand2);color:#fff;border-color:var(--brand2)}
+.cust{display:grid;grid-template-columns:230px 1fr;gap:14px}
+@media(max-width:760px){.cust{grid-template-columns:1fr}}
+.cust .who{border-right:1px dashed var(--line);padding-right:12px}
+.cust .nm{font-size:17px;font-weight:700}
+.meta{color:var(--sub);font-size:12.5px;line-height:1.6;margin-top:4px}
+.msg{background:#f7f9fd;border:1px solid var(--line);border-radius:8px;padding:9px 11px;line-height:1.6;margin-top:8px;white-space:pre-wrap}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.bar{height:10px;background:#e8ecf5;border-radius:6px;overflow:hidden;min-width:80px}
+.bar i{display:block;height:100%;background:var(--brand2)}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:9px;z-index:50;display:none}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:40;padding:14px}
+.modal .box{background:#fff;border-radius:12px;padding:18px;width:min(520px,100%);max-height:92vh;overflow:auto}
+label.f{display:block;margin:10px 0 4px;font-weight:700;font-size:12.5px}
+.warn{background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:9px 12px;font-size:12.5px;line-height:1.6}
+.small{font-size:12px;color:var(--sub)}
+.ck{border-bottom:1px solid var(--line);padding:10px 0}
+.empty{text-align:center;color:var(--sub);padding:40px 10px}
+@media print{header,nav,.noprint,button,.toast{display:none!important}body{background:#fff}.card{break-inside:avoid}}
+</style>
+</head>
+<body>
+<header>
+  <h1>이관·수금 고객 &amp; FC 활동관리</h1>
+  <span class="sub" id="subtxt">고객 이름·생년월일은 이 기기에만 저장되고, 활동 기록(가명 번호)만 서버에 전송됩니다</span>
+  <span style="flex:1"></span>
+  <span id="syncst" class="sub"></span>
+  <span id="who" style="font-size:13px"></span>
+  <button class="b" id="logoutBtn" style="display:none;padding:3px 10px" onclick="logout()">로그아웃</button>
+</header>
+<div id="login" style="display:none;position:fixed;inset:0;z-index:60;background:#f4f6fa;align-items:center;justify-content:center">
+  <form id="loginForm" class="card" style="width:min(360px,92vw);padding:28px 26px;margin:0" autocomplete="on">
+    <h2 style="color:#1f3864;margin:0 0 4px">FC 활동관리 로그인</h2>
+    <p class="hint" style="margin-bottom:14px">사번과 비밀번호를 입력하세요</p>
+    <label class="f">사번</label><input id="lg-emp" style="width:100%;font-size:16px;padding:10px" autocomplete="username" autocapitalize="off">
+    <label class="f">비밀번호</label><input id="lg-pw" type="password" style="width:100%;font-size:16px;padding:10px" autocomplete="current-password">
+    <button class="b pri" type="submit" id="lg-go" style="width:100%;margin-top:16px;padding:11px;font-size:15px">로그인</button>
+    <div id="lg-err" style="color:#c62828;font-size:13px;margin-top:10px;min-height:18px"></div>
+  </form>
+</div>
+<nav id="nav"></nav>
+<main id="main"></main>
+<div class="toast" id="toast"></div>
+<div class="modal" id="modal"><div class="box" id="modalBox"></div></div>
+
+<script>
+"use strict";
+/* ================= 기본 설정 ================= */
+let KEY = "fcapp.v1";
+/* 서버 연결 정보 (Supabase 프로젝트의 URL과 anon(공개) 키. anon 키는 공개되어도 되며, 보안은 서버의 권한 규칙이 담당) */
+const CFG = {url:"https://ouexmnpcfzctwhihxvvn.supabase.co", key:"sb_publishable_2uoT9_XLPi35eWZXcTj_2w_WwW5O7HW"};
+const EMAIL_DOMAIN = "@fcapp.internal";
+const SERVER = /^https?:\/\//.test(CFG.url) && CFG.key.length > 20;
+const TYPES = {
+  A:{name:"긴급 케어군",rank:1,tag:"수금·유지 방어",goal:"최우선 1순위 터치. 영업 멘트 배제, 불이익·실효를 막으려는 관리 명분으로 신뢰 확보"},
+  B:{name:"골든 리모델링군",rank:2,tag:"추가·전환 영업 핵심",goal:"담당자 변경 인사 + 달라진 의료비/보장 기준 점검 → 대면 미팅·가족 증권 분석 유도"},
+  C:{name:"단발·소액 보유군",rank:3,tag:"접점 확대용",goal:"가벼운 안부 + 보장 공백 터치. 작은 계약부터 챙겨주고 핵심 보장 공백을 짚어줌"},
+  D:{name:"장기 휴면·고령군",rank:4,tag:"안부·소개 연결",goal:"무리한 권유 대신 주기적 안부로 친밀감 → 자녀·손주 보험 니즈로 확장"},
+  E:{name:"일반 관리군",rank:5,tag:"기타",goal:"담당자 변경 인사와 불편 사항 확인"}
+};
+const DEFAULT_MSG = {
+ A:{sms:"{고객명}님 안녕하세요, 담당자가 바뀌어 인사드립니다. 보험료 납입 상태를 확인해 보니 불이익이나 계약 실효가 생기지 않도록 먼저 안내드릴 내용이 있어 연락드렸습니다. 편하실 때 연락 주세요. - {FC} 드림",
+    call:"{고객명}님 안녕하세요, 보험 담당 {FC}입니다. 불이익이나 실효가 생기기 전에 급히 확인드릴 게 있어서 연락드렸어요. 지금 잠깐 통화 괜찮으세요?",
+    refuse:"바쁘실 때 죄송합니다. 확인하실 내용만 문자로 정리해서 보내드릴게요. 한 번만 살펴봐 주시면 됩니다."},
+ B:{sms:"{고객명}님 안녕하세요, 담당자가 바뀌어 인사드립니다. 최근 의료비와 보장 기준이 많이 달라져서, 가입하신 보장이 지금 기준에 맞는지 점검해 드리고 있습니다. 편하실 때 5분만 시간 내주실 수 있을까요? - {FC} 드림",
+    call:"{고객명}님 안녕하세요, 새로 담당하게 된 {FC}입니다. 가입하신 보험이 요즘 기준에 맞는지 점검해 드리고 있어서요. 가족분 증권도 같이 보면 훨씬 정확한데, 잠깐 통화 괜찮으세요?",
+    refuse:"필요 없으실 수도 있죠. 다만 점검 결과를 한 장으로 정리해 드리면 판단하기 편하실 거예요. 부담 없이 받아만 보시고, 2주 뒤에 한 번만 안부 여쭙겠습니다."},
+ C:{sms:"{고객명}님 안녕하세요, 담당자가 바뀌어 인사드립니다. 가입하신 보험을 챙겨드리다 보니 큰 질병이나 사고 쪽 보장은 비어 있지 않은지 간단히 확인해 드릴 수 있어 연락드렸습니다. - {FC} 드림",
+    call:"{고객명}님 안녕하세요, 보험 담당 {FC}입니다. 가입하신 보험 관리 차원에서 불편하신 점은 없는지 먼저 여쭤보려고요. 잠깐 괜찮으세요?",
+    refuse:"알겠습니다. 가입하신 보험은 제가 계속 챙겨드리고 있으니 궁금하실 때 언제든 연락 주세요. 한 달 뒤에 안부만 한 번 드릴게요."},
+ D:{sms:"{고객명}님 안녕하세요, 담당자가 바뀌어 인사드립니다. 건강은 어떠신지 안부 여쭙고, 불편하시거나 놓치고 계신 혜택이 없는지 확인드리려 연락드렸습니다. - {FC} 드림",
+    call:"{고객명}님 안녕하세요, 새 담당 {FC}입니다. 건강하신지 안부 여쭈려고 전화드렸어요. 통화 괜찮으세요?",
+    refuse:"네, 괜찮습니다. 건강 잘 챙기시고요, 필요하실 때 편하게 연락 주세요. 명절 즈음에 안부 문자만 드릴게요."},
+ E:{sms:"{고객명}님 안녕하세요, 담당자가 바뀌어 인사드립니다. 놓치고 계신 혜택이나 불편하신 점은 없는지 먼저 확인드리려 연락드렸습니다. - {FC} 드림",
+    call:"{고객명}님 안녕하세요, 보험 담당 {FC}입니다. 담당자가 바뀌어 인사차 전화드렸어요. 불편하신 점은 없으신지 확인하려고요.",
+    refuse:"알겠습니다. 필요하실 때 언제든 연락 주세요. 2주 뒤에 안부 문자만 드리겠습니다."}
+};
+const DEFAULT_SET = {fc:"홍길동",bMin:30,bMax:59,bYears:3,elder:60,small:30000,cool:14,listSize:30,
+  keywords:["건강","암","종신","종합"],urgent:["미납","연체","실효예정"],paidWord:"완납",msgs:DEFAULT_MSG};
+const CHECKS = [
+ ["1. 데이터 입력 및 자동 분류","복사·붙여넣기 편의성","전산에서 내려받은 리스트를 넣을 때 열 순서나 날짜·금액 형식이 꼬이지 않고 한 번에 들어가는가?"],
+ ["1. 데이터 입력 및 자동 분류","분류 기준의 현실성","자동으로 나뉜 타입이 실제 현장 감각과 맞는가? ('급히 연락할 사람'과 '여유 있게 터치할 사람'이 제대로 걸러지는가?)"],
+ ["1. 데이터 입력 및 자동 분류","우선순위 선별력","수십~수백 명 중 오늘 먼저 연락할 상위 명단이 한눈에 띄는가?"],
+ ["2. 문자·전화 스크립트 실전성","말투 자연스러움","소리 내어 읽어보았을 때 딱딱하거나 AI 번역체처럼 어색하지 않고 내 말투처럼 자연스러운가?"],
+ ["2. 문자·전화 스크립트 실전성","첫 반응 유도력","'담당자 변경 인사 + 점검·관리 명분'이 경계심을 낮추고 통화 유지나 답장으로 이어지는가?"],
+ ["2. 문자·전화 스크립트 실전성","거절/무응답 대응","연락이 안 되거나 '괜찮아요, 필요 없어요' 할 때 다음 행동(재연락 시점, 짧은 후속 멘트)이 막힘없이 이어지는가?"],
+ ["3. 기록 및 관리 부담","입력 난이도","결과를 간단한 선택·체크 수준으로 1분 안에 남길 수 있는가?"],
+ ["3. 기록 및 관리 부담","단장님 확인 편의성","줄줄이 읽지 않아도 진행 현황과 막히는 지점이 한눈에 파악되는가?"],
+ ["3. 기록 및 관리 부담","소수 인원 이관 가능성","지금 방식 그대로 소수 인원에게 넘겨도 단장님 손이 많이 가지 않고 스스로 굴릴 수 있겠는가?"]
+];
+const SAMPLE = `고객명\t생년월일\t성별\t가입상품군\t월납보험료\t납입상태\t가입일\t마지막접촉일\t특이사항
+김가나\t1982-03-14\t여\t종합건강,운전자\t85000\t정상\t2019-05-10\t2025-06-01\t
+이다라\t1975-09-02\t남\t암,종신\t120000\t연체\t2018-02-20\t2025-01-10\t
+박마바\t1990-07-21\t남\t운전자\t15000\t정상\t2022-08-15\t2024-11-02\t
+최사아\t1958-12-05\t여\t연금,종신\t0\t완납\t2005-03-01\t2023-03-03\t
+정자차\t1988-01-30\t여\t치아\t22000\t정상\t2023-03-12\t\t
+한카타\t1979-06-18\t남\t건강,암\t95000\t정상\t2020-10-05\t2025-09-09\t
+오파하\t1985-11-11\t남\t실손,운전자\t45000\t정상\t2024-06-01\t2025-12-01\t
+윤하나\t1992-04-09\t여\t상해\t9000\t미납\t2021-09-09\t\t
+장두리\t1963-02-25\t남\t종합건강\t70000\t정상\t2012-04-04\t2024-02-02\t
+서세네\t1980-08-08\t여\t암\t60000\t정상\t2021-07-07\t2025-03-03\t자동이체 오류
+임다섯\t1996-05-05\t남\t운전자\t12000\t정상\t2019-05-05\t\t
+권여섯\t1971-10-10\t여\t종신,건강\t150000\t실효예정\t2016-01-01\t2025-05-05\t`;
+
+/* ================= 상태 ================= */
+let S = load();
+function load(){
+  try{const j=JSON.parse(localStorage.getItem(KEY)||"null"); if(j){j.set=Object.assign({},DEFAULT_SET,j.set||{});
+    j.set.msgs=Object.assign({},DEFAULT_MSG,j.set.msgs||{}); return j;}}catch(e){}
+  return {customers:[],logs:[],check:{},set:JSON.parse(JSON.stringify(DEFAULT_SET))};
+}
+function save(){ try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){toast("저장 공간 오류: 백업 파일을 내려받아 주세요");} }
+
+/* ================= 유틸 ================= */
+const $ = s=>document.querySelector(s);
+const esc = s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pad=n=>String(n).padStart(2,"0");
+const fmt=d=>d?`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`:"-";
+const today=()=>{const d=new Date();d.setHours(0,0,0,0);return d;};
+const dayDiff=(a,b)=>Math.round((a-b)/864e5);
+function pd(s){ if(!s)return null; s=String(s).trim(); if(!s)return null;
+  let m=s.match(/^(\d{4})[-./\s]*(\d{1,2})[-./\s]*(\d{1,2})/); if(!m)return null;
+  const d=new Date(+m[1],+m[2]-1,+m[3]); return isNaN(d)?null:d; }
+function toast(t,undo){const e=$("#toast");e.innerHTML=esc(t)+(undo?` <button class="b" style="padding:2px 8px;margin-left:8px" id="undoBtn">되돌리기</button>`:"");
+  e.style.display="block"; if(undo)$("#undoBtn").onclick=()=>{undo();e.style.display="none";};
+  clearTimeout(toast.t); toast.t=setTimeout(()=>e.style.display="none",undo?5000:2200);}
+function copy(text){ const done=()=>toast("복사했습니다. 카톡·문자에 붙여넣기 하세요");
+  if(navigator.clipboard&&window.isSecureContext!==false){navigator.clipboard.writeText(text).then(done).catch(()=>fb());}else fb();
+  function fb(){const t=document.createElement("textarea");t.value=text;document.body.appendChild(t);t.select();try{document.execCommand("copy");done();}catch(e){toast("복사 실패: 직접 선택해서 복사하세요");}t.remove();} }
+function download(name,text,type){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["﻿"+text],{type:type||"text/plain"}));a.download=name;a.click();}
+
+/* ================= 분류 로직 ================= */
+function enrich(){
+  const T=today(), st=S.set;
+  const lastLog={}, cnt={};
+  S.logs.forEach(l=>{const d=pd(l.date); if(!d)return; cnt[l.name]=(cnt[l.name]||0)+1; if(!lastLog[l.name]||d>lastLog[l.name])lastLog[l.name]=d;});
+  return S.customers.map((c,i)=>{
+    const b=pd(c.birth), g=pd(c.start), lc0=pd(c.last);
+    const age=b?Math.floor(dayDiff(T,b)/365.25):null;
+    const years=g?Math.round(dayDiff(T,g)/365.25*10)/10:null;
+    let last=lc0; const ll=lastLog[c.name]; if(ll&&(!last||ll>last))last=ll;
+    const prem=Number(String(c.premium||"0").replace(/[^\d.]/g,""))||0;
+    const prod=c.products||"";
+    let type,reason;
+    if(st.urgent.includes(c.status)||(c.note&&c.note.trim())){type="A";reason=st.urgent.includes(c.status)?`납입상태 ${c.status}`:`특이사항: ${c.note}`;}
+    else if(c.status===st.paidWord||(age!=null&&age>=st.elder)){type="D";reason=c.status===st.paidWord?"완납":`${age}세 고령`;}
+    else if(prem<=st.small&&!st.keywords.some(k=>k&&prod.includes(k))){type="C";reason=`월 ${prem.toLocaleString()}원, 종합보장 없음`;}
+    else if(age!=null&&age>=st.bMin&&age<=st.bMax&&years!=null&&years>=st.bYears){type="B";reason=`${age}세, 가입 ${years}년`;}
+    else {type="E";reason="해당 타입 없음";}
+    const daysSince=last?dayDiff(T,last):null;
+    const resting=daysSince!=null&&daysSince<st.cool;
+    return Object.assign({},c,{i,age,years,last,prem,type,reason,daysSince,resting,cnt:cnt[c.name]||0});
+  });
+}
+function fill(t,c){return t.replace(/\{고객명\}/g,c.name).replace(/\{FC\}/g,S.set.fc);}
+function sortToday(list){
+  return list.filter(c=>!c.resting).sort((a,b)=>TYPES[a.type].rank-TYPES[b.type].rank||
+    (b.daysSince==null?1e9:b.daysSince)-(a.daysSince==null?1e9:a.daysSince)||a.i-b.i);
+}
+
+/* ================= 화면 ================= */
+const PAGES=[["today","오늘의 명단"],["list","고객 전체"],["log","활동기록"],["dash","현황판"],["data","데이터 넣기"],["set","설정·멘트"],["check","테스트 점검"],["help","사용법"]];
+let page="today", filterType="ALL", q="";
+function nav(){ $("#nav").innerHTML=PAGES.map(([k,t])=>`<button class="${k===page?"on":""}" onclick="go('${k}')">${t}</button>`).join(""); }
+function go(p){page=p;nav();render();window.scrollTo(0,0);}
+function render(){ ({today:vToday,list:vList,log:vLog,dash:vDash,data:vData,set:vSet,check:vCheck,help:vHelp})[page](); }
+
+function chips(){
+  return `<div class="row" style="margin-bottom:10px"><button class="chip ${filterType==="ALL"?"on":""}" onclick="setF('ALL')">전체</button>`+
+   Object.keys(TYPES).map(k=>`<button class="chip ${filterType===k?"on":""}" onclick="setF('${k}')"><span class="badge t${k}">${k}</span> ${TYPES[k].name}</button>`).join("")+`</div>`;
+}
+function setF(k){filterType=k;render();}
+
+function vToday(){
+  const all=enrich();
+  if(!all.length){$("#main").innerHTML=`<div class="card empty"><h2>아직 고객 데이터가 없습니다</h2><p>전산에서 받은 고객 리스트를 붙여넣거나, 샘플로 먼저 써 보세요.</p>
+    <button class="b pri" onclick="go('data')">데이터 넣으러 가기</button> <button class="b" onclick="loadSample()">샘플 12명으로 체험하기</button></div>`;return;}
+  let list=sortToday(all); const rest=all.length-list.length;
+  const shown=list.filter(c=>filterType==="ALL"||c.type===filterType).slice(0,S.set.listSize);
+  const T=fmt(today()); const doneToday=S.logs.filter(l=>l.date===T).length;
+  $("#main").innerHTML=`<h2>오늘 연락할 명단</h2>
+  <p class="hint">A긴급 → B리모델링 → C소액 → D고령 → E일반 순서이고, 같은 타입에서는 오래 연락 못 한 고객이 먼저 나옵니다. 위에서부터 연락하고 결과 버튼만 누르세요.
+  최근 ${S.set.cool}일 안에 연락한 ${rest}명은 쉬는 중이라 제외됩니다.</p>
+  <div class="grid g4" style="margin-bottom:12px">
+   <div class="stat"><b>${doneToday}</b><span>오늘 남긴 기록</span></div>
+   <div class="stat"><b>${list.length}</b><span>지금 연락 대상</span></div>
+   <div class="stat"><b>${list.filter(c=>c.type==="A").length}</b><span>긴급(A) 대기</span></div>
+   <div class="stat"><b>${rest}</b><span>쉬는 중(쿨다운)</span></div></div>
+  ${chips()}
+  ${shown.length?shown.map((c,n)=>card(c,n+1)).join(""):`<div class="card empty">이 조건에 연락할 고객이 없습니다 🎉</div>`}`;
+}
+function card(c,n){
+  const m=S.set.msgs[c.type];
+  return `<div class="card cust"><div class="who">
+    <div><span class="badge t${c.type}">${c.type}</span> <span class="small">${TYPES[c.type].name}</span></div>
+    <div class="nm">${n}. ${esc(c.name)}</div>
+    <div class="meta">${c.age!=null?c.age+"세":"나이 미상"} · ${esc(c.gender||"")} · ${esc(c.status||"")}<br>
+    월 ${c.prem.toLocaleString()}원 · ${esc(c.products||"-")}<br>
+    최근접촉 ${c.last?fmt(c.last)+` (${c.daysSince}일 전)`:"기록 없음"} · 연락 ${c.cnt}회<br>
+    <b>판정:</b> ${esc(c.reason)}</div></div>
+   <div>
+    <div class="small" style="margin-bottom:6px">${esc(TYPES[c.type].goal)}</div>
+    <div class="tabs">
+      <button class="b sel" id="mb${c.i}-sms" onclick="showMsg(${c.i},'sms')">문자</button>
+      <button class="b" id="mb${c.i}-call" onclick="showMsg(${c.i},'call')">전화 오프닝</button>
+      <button class="b" id="mb${c.i}-refuse" onclick="showMsg(${c.i},'refuse')">거절·무응답 대응</button>
+      <button class="b" onclick="copyMsg(${c.i})">📋 복사</button></div>
+    <div class="msg" id="msg${c.i}" data-k="sms">${esc(fill(m.sms,c))}</div>
+    <div class="row" style="margin-top:10px">
+      <span class="small">바로 기록:</span>
+      <button class="b ok" onclick="quick(${c.i},'통화','O')">통화 ○</button>
+      <button class="b no" onclick="quick(${c.i},'통화','X')">통화 ×(부재)</button>
+      <button class="b ok" onclick="quick(${c.i},'문자','O')">문자 발송</button>
+      <button class="b ok" onclick="quick(${c.i},'미팅','O')">미팅 ○</button>
+      <button class="b" onclick="openLog(${c.i})">상세 기록…</button></div>
+   </div></div>`;
+}
+function showMsg(i,k){
+  const c=enrich()[i], m=S.set.msgs[c.type]; const e=$("#msg"+i); e.dataset.k=k; e.textContent=fill(m[k],c);
+  ["sms","call","refuse"].forEach(x=>{$("#mb"+i+"-"+x).classList.toggle("sel",x===k);});
+}
+function copyMsg(i){copy($("#msg"+i).textContent);}
+function addLog(o){
+  const l=Object.assign({id:newId(),date:fmt(today()),report:"",link:"",next:"",memo:"",synced:false,cat:new Date().toISOString()},o);
+  const c=enrich().find(x=>x.name===l.name); l.type=c?c.type:"E"; l.code=codeFor(l.name);
+  S.logs.push(l);save();syncSoon();return l;
+}
+function removeLog(id){
+  const l=S.logs.find(x=>String(x.id)===String(id)); if(!l)return false;
+  if(l.synced&&SERVER){ // 서버는 올라간 지 2일 이내의 본인 기록만 삭제 허용
+    const ref=l.cat?new Date(l.cat):pd(l.date);
+    if(ref&&Date.now()-ref>2*864e5){toast("서버에 올라간 지 2일이 지난 기록은 삭제할 수 없습니다");return false;}
+  }
+  S.logs=S.logs.filter(x=>String(x.id)!==String(id)); save();
+  if(l.synced&&SERVER)queueDelete(l.id);
+  return true;
+}
+function quick(i,method,result){
+  const c=S.customers[i]; const l=addLog({name:c.name,method,result});
+  toast(`${c.name} · ${method} ${result==="O"?"○":"×"} 기록됨`,()=>{removeLog(l.id);render();});
+  render();
+}
+function openLog(i){
+  const c=S.customers[i];
+  $("#modalBox").innerHTML=`<h2>${esc(c.name)} 상세 기록</h2>
+   <label class="f">연락일</label><input type="date" id="lg-date" value="${fmt(today())}">
+   <label class="f">연락 방법</label><select id="lg-m"><option>통화</option><option>문자</option><option>미팅</option></select>
+   <label class="f">결과</label><select id="lg-r"><option value="O">○ 연결·반응 있음</option><option value="X">× 부재·거절</option></select>
+   <label class="f">연결</label><select id="lg-l"><option value="">없음</option><option>계약</option><option>소개</option></select>
+   <label class="row" style="margin-top:10px"><input type="checkbox" id="lg-rp"> 점검 리포트(요약지) 전달함</label>
+   <label class="f">다음 연락 예정일 (선택)</label><input type="date" id="lg-n">
+   <label class="f">메모 (선택)</label><textarea id="lg-memo" rows="2"></textarea>
+   <div class="row" style="margin-top:14px;justify-content:flex-end"><button class="b" onclick="closeModal()">취소</button><button class="b pri" onclick="saveLog(${i})">저장</button></div>`;
+  $("#modal").style.display="flex";
+}
+function closeModal(){ $("#modal").style.display="none"; }
+function saveLog(i){
+  const c=S.customers[i];
+  addLog({name:c.name,date:$("#lg-date").value||fmt(today()),method:$("#lg-m").value,result:$("#lg-r").value,link:$("#lg-l").value,
+    report:$("#lg-rp").checked?"Y":"",next:$("#lg-n").value,memo:$("#lg-memo").value.trim()});
+  closeModal(); toast("저장했습니다"); render();
+}
+$("#modal").addEventListener("click",e=>{if(e.target.id==="modal")closeModal();});
+
+function vList(){
+  const all=enrich().filter(c=>(filterType==="ALL"||c.type===filterType)&&(!q||c.name.includes(q)));
+  $("#main").innerHTML=`<h2>고객 전체 (${S.customers.length}명)</h2><p class="hint">자동 분류 결과 전체입니다. 쉬는 중인 고객도 여기서는 보입니다.</p>
+  ${chips()}<div class="row" style="margin-bottom:10px"><input placeholder="이름 검색" value="${esc(q)}" oninput="q=this.value;vListBody()" id="qbox"></div><div id="lb"></div>`;
+  vListBody();
+}
+function vListBody(){
+  const all=enrich().filter(c=>(filterType==="ALL"||c.type===filterType)&&(!q||c.name.includes(q)));
+  $("#lb").innerHTML=all.length?`<div class="tw"><table><tr><th>타입</th><th>고객명</th><th>나이</th><th>납입상태</th><th>월납</th><th>가입상품군</th><th>가입경과</th><th>최근접촉</th><th>연락</th><th>판정 이유</th><th></th></tr>
+  ${all.map(c=>`<tr><td><span class="badge t${c.type}">${c.type}</span></td><td><b>${esc(c.name)}</b></td><td>${c.age??"-"}</td><td>${esc(c.status)}</td><td>${c.prem.toLocaleString()}</td><td>${esc(c.products)}</td><td>${c.years??"-"}년</td><td>${c.last?fmt(c.last):"-"}</td><td>${c.cnt}</td><td>${esc(c.reason)}</td>
+  <td><button class="b" onclick="openLog(${c.i})">기록</button></td></tr>`).join("")}</table></div>`:`<div class="card empty">조건에 맞는 고객이 없습니다.</div>`;
+}
+
+function vLog(){
+  const logs=[...S.logs].sort((a,b)=>b.date.localeCompare(a.date));
+  $("#main").innerHTML=`<h2>활동기록 (${logs.length}건)</h2><p class="hint">연락할 때마다 쌓인 기록입니다. 잘못 누른 건 삭제할 수 있습니다.</p>
+  <div class="row" style="margin-bottom:10px"><button class="b" onclick="exportLogs()">엑셀용 CSV로 내려받기</button></div>
+  ${logs.length?`<div class="tw"><table><tr><th>연락일</th><th>고객명</th><th>방법</th><th>결과</th><th>리포트</th><th>연결</th><th>다음연락</th><th>메모</th><th></th></tr>
+  ${logs.map(l=>`<tr><td>${esc(l.date)}</td><td><b>${esc(l.name)}</b></td><td>${esc(l.method)}</td><td>${l.result==="O"?"○":"×"}</td><td>${l.report?"Y":""}</td><td>${esc(l.link)}</td><td>${esc(l.next)}</td><td>${esc(l.memo)}</td>
+  <td><button class="b" onclick="delLog('${l.id}')">삭제</button></td></tr>`).join("")}</table></div>`:`<div class="card empty">아직 기록이 없습니다. 오늘의 명단에서 결과 버튼을 눌러 보세요.</div>`}`;
+}
+function delLog(id){removeLog(id);render();}
+function exportLogs(){
+  const rows=[["연락일","고객명","연락방법","결과","리포트전달","연결","다음연락일","메모"],...S.logs.map(l=>[l.date,l.name,l.method,l.result,l.report,l.link,l.next,l.memo])];
+  download("활동기록.csv",rows.map(r=>r.map(v=>`"${String(v||"").replace(/"/g,'""')}"`).join(",")).join("\r\n"),"text/csv");
+}
+
+function weekStart(d){const x=new Date(d);const w=(x.getDay()+6)%7;x.setDate(x.getDate()-w);return x;}
+function statRange(from,to,all){
+  const a=fmt(from), b=fmt(to); const ls=S.logs.filter(l=>l.date>=a&&l.date<=b);
+  const typeOf=n=>(all.find(c=>c.name===n)||{}).type;
+  const f=(arr)=>({n:arr.length,callmeet:arr.filter(l=>l.method!=="문자").length,meet:arr.filter(l=>l.method==="미팅").length,
+    ok:arr.filter(l=>l.result==="O").length,report:arr.filter(l=>l.report==="Y").length,link:arr.filter(l=>l.link).length});
+  return {all:f(ls),by:k=>f(ls.filter(l=>typeOf(l.name)===k))};
+}
+/* ===== 코칭 비서: 막힌 구간을 찾아 피드백 멘트를 만들어 줌 ===== */
+const COACH_LOW={
+ A:"{FC}님, A타입은 영업 전화가 아니라 '확인 전화'입니다. 첫 문장을 \"불이익이나 실효가 생기기 전에 확인드릴 게 있어서 연락드렸습니다\"로 시작하고 상품 이야기는 꺼내지 마세요. 부재중이면 확인할 내용 한 줄을 문자로 남기고, 같은 날 저녁이나 다음 날 오전에 한 번 더 걸어 보세요.",
+ B:"{FC}님, B타입 첫 통화에서 보장 점검까지 한 번에 말하려 하지 않으셨나요? 첫 연락은 \"담당자 변경 인사 + 5분 통화 가능하신지\"만 묻는 것으로 줄여 보세요. 문자로 이름을 먼저 알리고 전화하면 받는 비율이 올라갑니다.",
+ C:"{FC}님, C타입은 가벼운 안부가 먼저입니다. 첫 통화는 \"가입하신 보험 관리 차원에서 불편한 점이 없는지\" 한 가지만 여쭤보고 끝내 보세요. 보장 공백 이야기는 두 번째 연락으로 미루는 편이 반응이 좋습니다.",
+ D:"{FC}님, D타입은 용건보다 안부가 먼저입니다. 오전 시간대에 짧게(1분 안팎) 건강을 여쭙고, 거절하셔도 \"명절 즈음에 안부 문자만 드릴게요\"로 마무리해 관계를 이어 가세요.",
+ E:"{FC}님, 첫 문장을 \"담당자가 바뀌어 인사차 연락드렸습니다\"로 짧게 하고, 불편하신 점이 없는지 한 가지만 확인하세요. 거절하시면 2주 뒤 안부 문자 일정을 바로 기록해 두세요."
+};
+const COACH_REPORT="{FC}님, 통화는 연결되는데 점검 리포트 전달이 없습니다. 통화 끝에 \"점검 결과를 한 장으로 정리해서 보내드릴게요\"를 습관처럼 붙여 보세요. 리포트는 설득이 아니라 현황 정리라서 거절이 적습니다. 상담 후 48시간 안에 요약 문자까지 보내면 후속 연락도 자연스러워집니다.";
+const COACH_LINK="{FC}님, 리포트 전달까지는 잘 되고 있습니다. 다음 단계는 \"배우자분이나 자녀분 증권도 같이 보면 관리가 훨씬 편합니다\" 한 문장을 더 붙이는 것입니다. 본인 계약만 보지 말고 가정 단위 통합 관리로 넓혀 보세요. 리포트 전달 2주 뒤 안부 연락도 일정에 넣어 두세요.";
+const COACH_ACT="{FC}님, 최근 2주 접촉이 적습니다. 많이 하려고 하지 말고 오늘의 명단 위쪽 5명만 먼저 연락해 보세요. 결과는 버튼 한 번이면 기록됩니다. 막히는 고객이 있으면 어느 타입인지 알려 주세요.";
+const COACH_AWAIT="{FC}님, 긴급(A) 고객 중 아직 연락 기록이 없는 분이 있습니다. 다른 연락보다 먼저, 오늘 안에 확인 전화를 해 주세요. 영업 멘트 없이 \"불이익이나 실효가 생기지 않도록 확인드린다\"는 말만 하시면 됩니다.";
+const COACH_OK="최근 2주 기준으로 특별히 막힌 구간이 보이지 않습니다. 지금 흐름을 유지하고, 응답이 좋은 고객부터 가족 증권 점검 제안을 한 번씩 해 보세요.";
+function coachItems(all){
+  const e=today(), s=new Date(e); s.setDate(s.getDate()-13);
+  const r=statRange(s,e,all), t=r.all, items=[], pc=(a,b)=>Math.round(a/b*100)+"%";
+  const aWait=all.filter(c=>c.type==="A"&&c.cnt===0);
+  if(aWait.length) items.push({lv:"high",title:`긴급(A) 고객 ${aWait.length}명에게 아직 연락한 기록이 없습니다`,why:aWait.slice(0,5).map(c=>c.name).join(", ")+(aWait.length>5?" 외":""),msg:COACH_AWAIT});
+  Object.keys(TYPES).forEach(k=>{const x=r.by(k);
+    if(x.n>=3&&x.ok/x.n<0.3) items.push({lv:"mid",title:`${k}타입(${TYPES[k].name}) 첫 연락 반응이 낮습니다`,why:`최근 14일 접촉 ${x.n}건 중 반응 ${x.ok}건 (${pc(x.ok,x.n)})`,msg:COACH_LOW[k]});});
+  if(t.ok>=3&&t.report===0) items.push({lv:"mid",title:"통화는 되는데 점검 리포트 전달이 없습니다",why:`최근 14일 반응 ${t.ok}건, 리포트 전달 0건`,msg:COACH_REPORT});
+  if(t.report>=3&&t.link===0) items.push({lv:"mid",title:"리포트는 나갔는데 계약·소개 연결이 없습니다",why:`최근 14일 리포트 ${t.report}건, 연결 0건`,msg:COACH_LINK});
+  if(all.some(c=>!c.resting)&&t.n<5) items.push({lv:"low",title:"최근 2주 접촉 건수가 적습니다",why:`최근 14일 접촉 ${t.n}건`,msg:COACH_ACT});
+  if(!items.length) items.push({lv:"ok",title:"막힌 구간 없음",why:`최근 14일 접촉 ${t.n}건, 반응 ${t.ok}건`,msg:COACH_OK});
+  return items;
+}
+function coachHtml(all){
+  const items=coachItems(all); window.coachMsgs=items.map(c=>c.msg.replace(/\{FC\}/g,S.set.fc));
+  const col={high:"#c62828",mid:"#ef6c00",low:"#f9a825",ok:"#2e7d32"};
+  return `<h2 style="margin-top:6px">코칭 비서 <span class="small">(최근 14일 기준 · 막힌 구간 ${items.filter(c=>c.lv!=="ok").length}건)</span></h2>
+  <p class="hint">활동기록에서 막힌 구간을 찾아 피드백 멘트를 만들어 줍니다. [복사]해서 카톡으로 보내거나 수업 때 고칠 멘트로 쓰세요.</p>
+  ${items.map((c,i)=>`<div class="card" style="border-left:5px solid ${col[c.lv]}"><b>${esc(c.title)}</b><div class="small">${esc(c.why)}</div>
+   <div class="msg">${esc(window.coachMsgs[i])}</div><div style="margin-top:8px"><button class="b" onclick="copy(coachMsgs[${i}])">📋 코칭 멘트 복사</button></div></div>`).join("")}`;
+}
+function vDash(){
+  const all=enrich(), ws=weekStart(today()), we=new Date(ws);we.setDate(we.getDate()+6);
+  const pct=(a,b)=>b?Math.round(a/b*100)+"%":"-";
+  const rows=[0,1,2,3].map(k=>{const s=new Date(ws);s.setDate(s.getDate()-7*k);const e=new Date(s);e.setDate(e.getDate()+6);return [s,statRange(s,e,all).all];});
+  const cur=statRange(ws,we,all);
+  const typeRows=Object.keys(TYPES).map(k=>{const s=cur.by(k);const nobody=all.filter(c=>c.type===k&&c.cnt===0).length;
+    return {k,total:all.filter(c=>c.type===k).length,s,nobody};});
+  const stuck=typeRows.filter(r=>r.s.n>=3&&r.s.ok/r.s.n<0.3);
+  $("#main").innerHTML=`<h2>현황판</h2><p class="hint">이번 주: ${fmt(ws)} ~ ${fmt(we)} (월~일). 단장님이 한눈에 진행 현황과 막힌 구간을 보는 화면입니다.</p>
+  <div class="grid g4" style="margin-bottom:12px">
+   <div class="stat"><b>${cur.all.n}</b><span>이번 주 접촉</span></div>
+   <div class="stat"><b>${cur.all.callmeet}</b><span>통화·미팅 (미팅 ${cur.all.meet})</span></div>
+   <div class="stat"><b>${cur.all.report}</b><span>점검 리포트 전달</span></div>
+   <div class="stat"><b>${cur.all.link}</b><span>계약·소개 연결</span></div>
+   <div class="stat"><b>${pct(cur.all.ok,cur.all.n)}</b><span>응답률(○)</span></div></div>
+  ${S.customers.length?coachHtml(all):""}
+  <h2 style="margin-top:16px">타입별 현황 (이번 주)</h2>
+  <div class="tw"><table><tr><th>타입</th><th>고객 수</th><th>접촉</th><th>응답(○)</th><th>응답률</th><th>리포트</th><th>연결</th><th>아직 연락 안 한 고객</th></tr>
+  ${typeRows.map(r=>`<tr><td><span class="badge t${r.k}">${r.k}</span> ${TYPES[r.k].name}</td><td>${r.total}</td><td>${r.s.n}</td><td>${r.s.ok}</td>
+   <td><div class="row"><div class="bar" style="width:90px"><i style="width:${r.s.n?r.s.ok/r.s.n*100:0}%"></i></div>${pct(r.s.ok,r.s.n)}</div></td><td>${r.s.report}</td><td>${r.s.link}</td><td>${r.nobody}</td></tr>`).join("")}</table></div>
+  <h2 style="margin-top:16px">최근 4주 추이</h2>
+  <div class="tw"><table><tr><th>주 시작</th><th>접촉</th><th>통화·미팅</th><th>미팅</th><th>응답률</th><th>리포트</th><th>계약·소개</th></tr>
+  ${rows.map(([s,x],k)=>`<tr><td>${k===0?"<b>"+fmt(s)+" (이번 주)</b>":fmt(s)}</td><td>${x.n}</td><td>${x.callmeet}</td><td>${x.meet}</td><td>${pct(x.ok,x.n)}</td><td>${x.report}</td><td>${x.link}</td></tr>`).join("")}</table></div>`;
+}
+
+function parsePaste(text){
+  const lines=text.replace(/\r/g,"").split("\n").filter(l=>l.trim()); if(!lines.length)return [];
+  const split=l=>l.includes("\t")?l.split("\t"):l.split(",");
+  let rows=lines.map(split).map(r=>r.map(x=>x.trim().replace(/^"|"$/g,"")));
+  const map={name:0,birth:1,gender:2,products:3,premium:4,status:5,start:6,last:7,note:8};
+  if(rows[0].some(x=>x.includes("고객명")||x.includes("성명")||x==="이름")){
+    const h=rows.shift(); const find=(...ks)=>h.findIndex(x=>ks.some(k=>x.includes(k)));
+    const m2={name:find("고객명","성명","이름"),birth:find("생년","생일"),gender:find("성별"),products:find("상품","보종"),premium:find("월납","보험료"),
+      status:find("납입상태","상태","연체"),start:find("가입일","계약일"),last:find("마지막","최근"),note:find("특이","비고")};
+    Object.keys(m2).forEach(k=>{if(m2[k]>=0)map[k]=m2[k]; else if(k!=="name")map[k]=-1;});
+  }
+  return rows.filter(r=>r[map.name]).map(r=>{const g=k=>map[k]>=0?(r[map[k]]||""):"";
+    const nz=s=>{const d=pd(s);return d?fmt(d):"";};
+    return {name:g("name"),birth:nz(g("birth")),gender:g("gender"),products:g("products"),premium:g("premium"),status:g("status"),start:nz(g("start")),last:nz(g("last")),note:g("note")};});
+}
+function vData(){
+  $("#main").innerHTML=`<h2>데이터 넣기</h2>
+  <p class="hint">엑셀(또는 전산 화면)에서 고객 표를 <b>머리글 포함해서 복사(Ctrl+C)</b> → 아래 칸에 붙여넣기(Ctrl+V) → [불러오기]를 누르세요.
+  머리글 이름으로 열을 자동으로 찾고, 머리글이 없으면 <b>고객명, 생년월일, 성별, 가입상품군, 월납보험료, 납입상태, 가입일, 마지막접촉일, 특이사항</b> 순서로 읽습니다.</p>
+  <div class="card"><textarea id="paste" rows="9" placeholder="여기에 붙여넣기"></textarea>
+   <div class="row" style="margin-top:10px">
+    <label><input type="radio" name="mode" value="replace" checked> 기존 고객을 모두 바꾸기</label>
+    <label><input type="radio" name="mode" value="append"> 뒤에 추가하기</label>
+    <button class="b pri" onclick="doImport()">불러오기</button>
+    <button class="b" onclick="loadSample()">샘플 12명 넣기</button></div>
+   <p class="small">현재 고객 ${S.customers.length}명 · 활동기록 ${S.logs.length}건. 동명이인은 이름 뒤에 (1),(2)를 붙여 구분하세요.</p></div>
+  <h2>백업·복원</h2>
+  <div class="card"><p class="hint">브라우저 데이터를 지우면 기록이 사라질 수 있으니 주기적으로 백업 파일을 내려받으세요. 고객 개인정보가 들어 있으니 안전한 곳에 보관하세요.</p>
+   <div class="row"><button class="b" onclick="backup()">백업 파일 내려받기 (.json)</button>
+   <label class="b">백업 파일 불러오기 <input type="file" accept=".json" onchange="restore(this.files[0])" style="display:none"></label>
+   <button class="b no" onclick="resetAll()">전체 초기화</button></div></div>`;
+}
+function doImport(){
+  const rows=parsePaste($("#paste").value); if(!rows.length){toast("읽을 수 있는 행이 없습니다");return;}
+  const mode=document.querySelector("input[name=mode]:checked").value;
+  if(mode==="replace")S.customers=rows; else S.customers=S.customers.concat(rows);
+  save(); toast(`${rows.length}명을 불러왔습니다`); go("today");
+}
+function loadSample(){
+  if(S.customers.length&&!confirm("현재 고객 데이터를 샘플로 바꿀까요? (활동기록은 유지됩니다)"))return;
+  S.customers=parsePaste(SAMPLE); save(); go("today");
+}
+function backup(){download(`FC활동관리_백업_${fmt(today())}.json`,JSON.stringify(S),"application/json");}
+function restore(f){ if(!f)return; const r=new FileReader(); r.onload=()=>{try{const j=JSON.parse(String(r.result).replace(/^﻿/,"")); if(!j.customers)throw 0; S=j; S.set=Object.assign({},DEFAULT_SET,S.set||{}); S.set.msgs=Object.assign({},DEFAULT_MSG,S.set.msgs||{}); S.logs=S.logs||[]; S.check=S.check||{}; save(); toast("복원했습니다"); go("today");}catch(e){toast("올바른 백업 파일이 아닙니다");}}; r.readAsText(f); }
+function resetAll(){ if(confirm("고객·활동기록·설정을 모두 지울까요? 되돌릴 수 없습니다.")&&confirm("정말 지울까요?")){localStorage.removeItem(KEY);S=load();go("today");} }
+
+function vSet(){
+  const st=S.set;
+  const num=(id,label,v,h)=>`<div><label class="f">${label}</label><input type="number" id="${id}" value="${v}" style="width:110px"> <span class="small">${h||""}</span></div>`;
+  $("#main").innerHTML=`<h2>설정·멘트</h2><p class="hint">기준을 바꾸면 분류가 즉시 다시 계산됩니다. 멘트는 예시이니 본인 말투로 고쳐 쓰세요. 발송 전 회사 보험안내 문구 기준을 확인하세요.</p>
+  <div class="card"><div class="row" style="align-items:flex-start;gap:24px">
+   <div><label class="f">FC 이름 ({FC} 자리)</label><input id="s-fc" value="${esc(st.fc)}"></div>
+   ${num("s-bmin","B타입 최소 나이",st.bMin)}${num("s-bmax","B타입 최대 나이",st.bMax)}${num("s-byears","B타입 최소 가입 경과(년)",st.bYears)}
+   ${num("s-elder","D타입 고령 기준(세)",st.elder)}${num("s-small","C타입 소액 기준(월납, 원)",st.small)}
+   ${num("s-cool","연락 쿨다운(일)",st.cool,"최근 N일 내 연락 고객은 오늘 명단에서 제외")}${num("s-list","오늘 명단 최대 인원",st.listSize)}</div>
+   <label class="f">종합보장 키워드 (쉼표로 구분 · 가입상품군에 있으면 종합보장 보유로 판단)</label><input id="s-kw" style="width:100%" value="${esc(st.keywords.join(","))}">
+   <label class="f">긴급 납입상태 (쉼표로 구분 → A타입)</label><input id="s-urg" style="width:100%" value="${esc(st.urgent.join(","))}">
+   <label class="f">완납 표기</label><input id="s-paid" value="${esc(st.paidWord)}"></div>
+  ${Object.keys(TYPES).map(k=>`<div class="card"><span class="badge t${k}">${k}</span> <b>${TYPES[k].name}</b>
+    <label class="f">추천 문자 ({고객명}, {FC} 자동 치환)</label><textarea id="m-${k}-sms" rows="3">${esc(st.msgs[k].sms)}</textarea>
+    <label class="f">전화 오프닝</label><textarea id="m-${k}-call" rows="2">${esc(st.msgs[k].call)}</textarea>
+    <label class="f">거절·무응답 대응</label><textarea id="m-${k}-refuse" rows="2">${esc(st.msgs[k].refuse)}</textarea></div>`).join("")}
+  <div class="row"><button class="b pri" onclick="saveSet()">설정 저장</button><button class="b" onclick="resetMsgs()">멘트를 기본값으로 되돌리기</button></div>`;
+}
+function saveSet(){
+  const g=id=>$("#"+id).value, n=id=>Number(g(id));
+  const st=S.set; st.fc=g("s-fc").trim()||"홍길동"; st.bMin=n("s-bmin");st.bMax=n("s-bmax");st.bYears=n("s-byears");st.elder=n("s-elder");st.small=n("s-small");st.cool=n("s-cool");st.listSize=Math.max(1,n("s-list"));
+  st.keywords=g("s-kw").split(",").map(x=>x.trim()).filter(Boolean); st.urgent=g("s-urg").split(",").map(x=>x.trim()).filter(Boolean); st.paidWord=g("s-paid").trim();
+  Object.keys(TYPES).forEach(k=>{st.msgs[k]={sms:g(`m-${k}-sms`),call:g(`m-${k}-call`),refuse:g(`m-${k}-refuse`)};});
+  save(); toast("저장했습니다");
+}
+function resetMsgs(){ if(confirm("모든 멘트를 기본값으로 되돌릴까요?")){S.set.msgs=JSON.parse(JSON.stringify(DEFAULT_MSG));save();vSet();} }
+
+function vCheck(){
+  const groups=[...new Set(CHECKS.map(c=>c[0]))];
+  const bad=CHECKS.map((c,i)=>[c,S.check[i]||{}]).filter(([c,s])=>s.v==="△"||s.v==="X");
+  $("#main").innerHTML=`<h2>1차 테스트 점검표</h2><p class="hint">며칠~1주일 써 보면서 ○ / △ / × 만 눌러 두세요. 다음 AI 수업 때 △·× 항목만 바로 고치면 됩니다.</p>
+  ${groups.map(g=>`<div class="card"><b>${g}</b>${CHECKS.map((c,i)=>c[0]!==g?"":`<div class="ck"><div><b>${c[1]}</b></div><div class="small" style="margin:3px 0 8px">${c[2]}</div>
+   <div class="row">${["O","△","X"].map(v=>`<button class="b ${(S.check[i]||{}).v===v?"sel":""}" onclick="setCk(${i},'${v}')">${v==="O"?"○":v==="X"?"×":v}</button>`).join("")}
+   <input style="flex:1;min-width:200px" placeholder="메모 (어디가 막혔는지)" value="${esc((S.check[i]||{}).memo||"")}" onchange="setCkMemo(${i},this.value)"></div></div>`).join("")}</div>`).join("")}
+  <div class="card"><b>수업 때 고칠 항목 (△·×) ${bad.length}개</b>${bad.length?bad.map(([c,s])=>`<div class="ck">[${s.v==="X"?"×":"△"}] <b>${c[1]}</b> — ${esc(s.memo||"메모 없음")}</div>`).join(""):`<p class="small">아직 △·× 로 체크한 항목이 없습니다.</p>`}</div>`;
+}
+function setCk(i,v){S.check[i]=Object.assign({},S.check[i],{v});save();vCheck();}
+function setCkMemo(i,m){S.check[i]=Object.assign({},S.check[i],{memo:m});save();}
+
+function vHelp(){
+  $("#main").innerHTML=`<h2>사용법</h2>
+  <div class="card"><ol style="line-height:1.9;margin:0;padding-left:20px">
+   <li><b>데이터 넣기</b> 탭에서 전산 고객 리스트를 붙여넣고 [불러오기]</li>
+   <li><b>오늘의 명단</b> 탭 위에서부터 연락 (문자·전화 멘트 확인, [복사] 버튼으로 붙여넣기)</li>
+   <li>연락 후 <b>통화 ○ / × / 문자 / 미팅</b> 버튼 한 번으로 기록 (상세 기록은 리포트 전달·계약/소개 연결·메모)</li>
+   <li><b>현황판</b>에서 주간 접촉, 응답률을 보고, 맨 위 <b>코칭 비서</b>가 알려주는 막힌 구간의 피드백 멘트를 복사해 FC에게 전달</li>
+   <li><b>테스트 점검</b>에서 ○△× 체크 → 수업 때 △·× 부분만 수정</li></ol></div>
+  <div class="card"><b>타입 분류 기준</b> (위에서부터 먼저 해당하는 타입으로 판정)
+   <table style="margin-top:8px"><tr><th>타입</th><th>조건</th><th>접근 전략</th></tr>
+   <tr><td><span class="badge tA">A</span> 긴급 케어군</td><td>납입상태 미납·연체·실효예정, 또는 특이사항(자동이체 오류·만기 임박 등) 있음</td><td>${TYPES.A.goal}</td></tr>
+   <tr><td><span class="badge tD">D</span> 장기 휴면·고령군</td><td>완납이거나 60세 이상</td><td>${TYPES.D.goal}</td></tr>
+   <tr><td><span class="badge tC">C</span> 단발·소액 보유군</td><td>월납 3만원 이하 + 건강·암·종신·종합 보장 없음</td><td>${TYPES.C.goal}</td></tr>
+   <tr><td><span class="badge tB">B</span> 골든 리모델링군</td><td>정상 유지, 30~59세, 가입 3년 이상</td><td>${TYPES.B.goal}</td></tr>
+   <tr><td><span class="badge tE">E</span> 일반 관리군</td><td>위에 해당 없음</td><td>${TYPES.E.goal}</td></tr></table>
+   <p class="small">※ 자료 표에는 판정 순서가 없어 A→D→C→B로 정했습니다. 소액 보유자가 B에도 걸리면 C(보장 공백 점검)로 봅니다. 숫자 기준은 설정 탭에서 바꿀 수 있습니다.</p></div>
+  <div class="card warn"><b>주의</b><br>• 고객 개인정보는 이 컴퓨터 브라우저에만 저장됩니다. 같은 브라우저·같은 컴퓨터에서 열어야 데이터가 보입니다. 주기적으로 백업하세요.<br>
+   • 추천 멘트는 예시입니다. 실제 발송 전 회사 보험안내 문구 심의·준수 기준을 확인하세요.<br>
+   • 파일 위치를 옮겨서 열면 브라우저가 다른 저장소로 인식해 데이터가 비어 보일 수 있으니, 그때는 백업 파일로 복원하세요.</div>`;
+}
+
+/* ================= 3단계: 신인교육 · 롤플레잉 ================= */
+const EDU=/*EDU_START*/{"curriculum": [{"week": 1, "title": "기본기: 전문가 영업의 틀과 도구 익히기", "goal": "'친분이 아니라 순서'로 일하는 전문가 영업의 3단계(사전 진단 → 현장 리포트 → 사후 루틴)를 이해하고, 프로그램으로 고객을 분류해 오늘 연락할 명단을 뽑을 수 있다.", "days": [{"day": "1일차", "title": "지인 영업의 한계와 전문가 영업", "activities": ["지인 영업이 멈추는 이유(거절 시 상처, 친분이 떨어지면 중단) 토론", "전문가 영업 3단계 설명: 사전 진단·현장 리포트·사후 루틴", "'설득하는 사람'이 아니라 '현황을 정리해 주는 사람'이라는 포지션 이해"], "output": "내가 생각하는 전문가의 모습 3줄 작성"}, {"day": "2일차", "title": "프로그램 사용법과 고객 데이터", "activities": ["FC활동관리 프로그램 설치·실행", "샘플 데이터로 [오늘의 명단]·[활동기록] 따라 해 보기", "배정된 이관·수금 고객 데이터 붙여넣기"], "output": "본인 고객 리스트 입력 완료"}, {"day": "3일차", "title": "고객 타입 A~E 이해", "activities": ["A 긴급 케어·B 골든 리모델링·C 단발 소액·D 장기 휴면 고령·E 일반의 판정 기준 학습", "내 고객 중 타입별 인원 확인, 의외의 분류가 있는지 점검", "타입별 접근 전략(영업 멘트 배제 / 점검 명분 / 가벼운 안부 / 안부와 소개) 정리"], "output": "타입별 접근 전략 한 장 요약"}, {"day": "4일차", "title": "고객 응대의 기본 태도", "activities": ["첫 연락의 원칙: 상품 권유 금지, '관리·점검' 명분으로 문 열기", "개인정보·민감정보 취급 기본 원칙(회사 정보보호 규정 확인)", "회사 보험안내 문구·설명 기준 확인(컴플라이언스 담당 안내)"], "output": "컴플라이언스 확인 체크리스트"}, {"day": "5일차", "title": "1주차 점검", "activities": ["프로그램 입력·분류 숙달 확인", "선배 또는 단장님과 15분 면담", "다음 주 롤플레잉 준비"], "output": "1주차 자가 점검표"}], "checks": ["프로그램에 내 고객 리스트를 넣고 오늘의 명단을 열 수 있다", "A~E 타입의 판정 기준과 접근 전략을 설명할 수 있다", "첫 연락에서 상품을 권유하지 않는 이유를 말할 수 있다", "개인정보와 안내 문구에 대한 회사 기준을 확인했다"], "target": "연락 시작 전 준비 단계 (실전 연락 0~3건 체험)"}, {"week": 2, "title": "첫 접점: 화법과 거절 대응", "goal": "담당자 변경 인사 문자와 전화 오프닝을 자기 말투로 소화하고, 거절 대응 3단계(공감 → 질문 → 다음 제안)로 대화를 이어갈 수 있다.", "days": [{"day": "6일차", "title": "담당자 변경 인사 문자", "activities": ["타입별 추천 문자를 소리 내어 읽고 본인 말투로 고치기", "문자 4요소 익히기: 인사·명분·한 가지 확인 사항·부담 없는 마무리", "A·D타입 고객에게 문자 발송 시작"], "output": "내 말투로 고친 타입별 문자 5종"}, {"day": "7일차", "title": "전화 오프닝", "activities": ["오프닝 10초 구성: 이름·담당자 변경·통화 가능 여부", "A타입은 '확인 전화', B타입은 '점검 안내'로 톤 구분", "짝을 지어 서로 오프닝 연습 후 피드백"], "output": "전화 오프닝 연습 5회"}, {"day": "8일차", "title": "거절 대응 3단계", "activities": ["공감('그렇죠, 바쁘시죠') → 질문('언제가 편하실까요?') → 다음 제안('문자로 정리해서 보내드릴게요')", "대표 거절 6종 학습: 바쁨·필요 없음·이미 담당자 있음·보험료 부담·영업 경계·생각해 볼게요", "프로그램 [롤플레잉] 탭으로 연습"], "output": "롤플레잉 연습 5회 이상"}, {"day": "9일차", "title": "무응답·재연락", "activities": ["부재 시 문자 한 줄 남기고 재시도 시점 정하기", "'다음 연락일'을 활동기록에 남기는 습관", "쿨다운 개념 이해(너무 자주 연락하지 않기)"], "output": "무응답 대응 규칙 메모"}, {"day": "10일차", "title": "2주차 점검", "activities": ["롤플레잉 점수 확인과 약한 거절 유형 선정", "실전 연락 결과 공유(응답률 확인)", "단장님 코칭 면담"], "output": "2주차 자가 점검표"}], "checks": ["타입별 문자와 전화 오프닝을 내 말투로 말할 수 있다", "거절 대응 3단계를 보지 않고 설명할 수 있다", "롤플레잉 6가지 거절 유형을 각각 1회 이상 연습했다", "활동기록에 연락 결과를 1분 안에 남긴다"], "target": "예시 목표: 롤플레잉 10회, 실전 연락 20건 안팎 (인원·업무량에 맞게 조정)"}, {"week": 3, "title": "점검과 리포트: 말이 아니라 종이로 말하기", "goal": "고객의 현재 보장을 점검해 '한눈에 보는 요약 브리핑지'를 만들고, 상품별 핵심 질문으로 보장 공백을 객관적으로 짚을 수 있다.", "days": [{"day": "11일차", "title": "사전 진단 질문 3가지", "activities": ["연령대·가족 구성·현재 보장 공백/만기·수금 이슈를 미리 짚는 3가지 질문 만들기", "고객이 스스로 궁금해지는 질문 연습", "B타입 고객 대상 통화 시작"], "output": "나만의 핵심 질문 3가지"}, {"day": "12일차", "title": "보장·계약 요약 브리핑지", "activities": ["브리핑지 항목: 가입 현황·월 보험료·주요 보장·확인된 공백·확인이 필요한 점", "'평가'가 아니라 '현황 정리'로 쓰는 법", "샘플 고객으로 브리핑지 1장 작성"], "output": "브리핑지 샘플 1장"}, {"day": "13일차", "title": "상품별 핵심 화법(1)", "activities": ["운전자·치아·상해·실손의 점검 질문과 화법 학습", "C타입 고객에게 가벼운 안부와 보장 공백 터치", "과장·압박 표현 금지 원칙"], "output": "상품별 질문 카드(운전자·치아·상해·실손)"}, {"day": "14일차", "title": "상품별 핵심 화법(2) · 가족 증권", "activities": ["암·건강·종신·연금의 점검 질문과 화법 학습", "'배우자·자녀 증권도 같이 챙기면 관리가 편하다'는 가정 단위 제안 연습", "대면 미팅 준비물(브리핑지, 질문지) 점검"], "output": "상품별 질문 카드(암·건강·종신·연금)"}, {"day": "15일차", "title": "3주차 점검", "activities": ["브리핑지를 활용한 모의 면담 1회", "리포트 전달 건수 확인", "단장님 코칭 면담"], "output": "3주차 자가 점검표"}], "checks": ["고객 1명의 요약 브리핑지를 30분 안에 만들 수 있다", "상품별 핵심 질문을 최소 4개 상품에 대해 말할 수 있다", "과장·압박 표현 없이 보장 공백을 설명할 수 있다", "점검 리포트를 실제 고객에게 1건 이상 전달했다"], "target": "예시 목표: 점검 리포트 전달 3건 이상, 대면·통화 미팅 3건 이상"}, {"week": 4, "title": "후속 루틴과 확장: 꾸준히 챙기는 전문가", "goal": "상담 후 약속된 리듬(48시간 요약 문자, 2주 뒤 안부)으로 후속 관리를 하고, 가족·소개 연결을 자연스럽게 제안할 수 있다.", "days": [{"day": "16일차", "title": "상담 후 48시간 요약 문자", "activities": ["상담 요약 문자 4요소: 감사·오늘 확인한 내용 요약·다음 약속·편한 연락 안내", "활동기록의 '다음 연락일' 활용", "요약 문자 작성 연습"], "output": "요약 문자 양식 3종"}, {"day": "17일차", "title": "2주 뒤 안부와 추가 확인", "activities": ["안부 연락의 목적: 계약 확인이 아니라 관계 유지", "추가 니즈 확인 질문(가족 변화, 직장 변화 등)", "D타입 고객 안부 루틴 만들기"], "output": "나의 후속 연락 캘린더"}, {"day": "18일차", "title": "소개·가족 연결 화법", "activities": ["'한 사람에서 가족·동료로' 확장 고리 이해", "무리한 소개 요청 대신 가정 단위 통합 관리 제안", "롤플레잉: 소개 요청 상황 연습"], "output": "소개·가족 연결 화법 메모"}, {"day": "19일차", "title": "주간 활동 리포트와 코칭", "activities": ["현황판으로 내 주간 활동(접촉·통화/미팅·리포트·계약/소개) 확인", "코칭 비서 피드백 읽고 개선점 정하기", "다음 달 활동 계획 세우기"], "output": "내 활동 개선 계획 1장"}, {"day": "20일차", "title": "졸업 점검", "activities": ["종합 롤플레잉(거절 6종 평균 70점 이상 목표)", "4주 활동 결과 공유", "수료 후 코칭 일정 확정"], "output": "수료 점검표"}], "checks": ["상담 후 48시간 안에 요약 문자를 보내는 루틴이 있다", "2주 뒤 안부 연락을 일정에 넣어 관리한다", "가족·소개 연결을 부담 없이 제안할 수 있다", "롤플레잉 거절 6종 평균 70점 이상을 받았다"], "target": "예시 목표: 4주 누적 실전 연락 50건 안팎, 점검 리포트 5건 이상 (수준에 맞게 조정)"}], "products": [{"name": "운전자", "ask": ["운전은 얼마나 자주 하세요? 출퇴근이나 업무로 쓰시나요?", "사고 났을 때 형사 합의나 변호사 비용 쪽은 어떻게 준비돼 있나요?", "가족 중에 운전을 새로 시작하신 분은 없나요?"], "gap": "운전 빈도와 가족 운전자 변화에 비해 보장이 오래전 그대로인 경우", "script": "운전자 보험은 가입만 해 두고 내용을 안 보시는 경우가 많아서요. 지금 보장이 요즘 운전 환경에 맞는지만 같이 확인해 드릴게요.", "caution": "특정 사고 사례를 과장해 불안을 키우지 않기. 보장 범위·면책은 약관 확인."}, {"name": "치아", "ask": ["최근에 치과 치료를 받으신 적 있나요?", "임플란트나 크라운 치료는 어떻게 대비하고 계세요?", "자녀분 치아 관리는 어떻게 하고 계세요?"], "gap": "치과 치료 계획은 있는데 보장 내용이나 연령·횟수 조건을 모르는 경우", "script": "치아 쪽은 가입 시기와 조건에 따라 받을 수 있는 범위가 달라서요. 지금 계약 조건만 한 번 정리해서 알려드릴게요.", "caution": "지급 조건·면책·감액 기간은 반드시 약관 기준으로 안내."}, {"name": "상해", "ask": ["평소 운동이나 야외활동을 하세요?", "일하시다 다치셨을 때 치료비와 쉬는 동안 생활비는 어떻게 준비돼 있나요?", "자녀분이 다니는 곳(학교·학원)에서 사고 대비는 되어 있나요?"], "gap": "상해 보장이 작은 금액으로만 있거나 통원·입원 구분이 불분명한 경우", "script": "상해 쪽은 작은 사고가 자주 생기는 만큼, 지금 보장이 어디까지인지만 간단히 정리해 드리겠습니다.", "caution": "금액 비교는 같은 조건에서만, 과장 금지."}, {"name": "실손", "ask": ["지금 실손이 몇 세대 상품인지 알고 계세요?", "병원 가실 때 실제로 청구해 보신 적 있으세요?", "가족 실손은 각자 어떻게 되어 있나요?"], "gap": "가입 시기·세대·갱신 조건을 모르고 유지만 하는 경우", "script": "실손은 가입 시기에 따라 보장 내용이 꽤 달라요. 지금 어떤 조건인지 확인만 해 드릴게요. 바꾸자는 이야기가 아니고 현황 정리입니다.", "caution": "전환·해지 권유는 불이익이 클 수 있으므로 현재 조건 확인 중심으로. 변경은 약관·회사 기준 확인 후 신중히."}, {"name": "암·건강", "ask": ["가족 중에 큰 병을 겪으신 분이 있나요?", "진단받았을 때 치료비 말고 일을 쉬는 동안 생활비 걱정은 어떠세요?", "지금 보장 금액이 몇 년 전 기준 그대로인가요?"], "gap": "오래전 가입한 진단비가 현재 치료비 수준과 차이 날 수 있는 경우", "script": "최근 의료비와 치료 방식이 많이 달라져서요. 가입하신 진단 보장이 지금 기준에 어느 정도인지 한 장으로 정리해서 보여드릴게요.", "caution": "특정 질병 통계나 치료비를 근거 없이 단정하지 않기. 자료는 출처 확인된 것만 사용."}, {"name": "종신·정기", "ask": ["가족 구성이 달라지신 부분이 있나요(결혼, 출산, 자녀 독립)?", "만약의 경우 가족이 생활하는 데 필요한 기간은 어느 정도로 보세요?", "지금 보험료 부담은 괜찮으신가요?"], "gap": "가족 구성 변화에 비해 사망 보장이 그대로이거나 과도하게 큰 경우", "script": "가족 상황이 바뀌면 필요한 보장도 달라져서요. 지금 계약이 현재 가족 상황에 맞는지만 같이 살펴볼게요.", "caution": "감정에 호소하는 표현 금지. 해지·환급 관련은 손실 가능성을 명확히 안내."}, {"name": "연금·저축", "ask": ["은퇴 이후 생활비는 어떻게 그려 보고 계세요?", "지금 불입 중인 상품의 납입 기간과 예상 수령 시기를 알고 계세요?", "다른 노후 준비(국민연금, 퇴직연금)와 같이 보신 적 있나요?"], "gap": "수령 시기·금액을 모르거나 다른 노후 준비와 합쳐 보지 않은 경우", "script": "연금은 넣는 것보다 언제 얼마를 받는지가 중요해서요. 지금 계약 기준으로 수령 시기와 금액만 정리해서 알려드릴게요.", "caution": "수익률 단정·과장 금지. 예상 금액은 가정 조건을 함께 안내."}], "scenarios": [{"id": "busy", "title": "\"지금 바빠요\"", "type": "B", "level": "기초", "context": "B타입 고객(42세, 가입 6년). 담당자 변경 인사 전화를 걸었더니 바로 끊으려 합니다.", "open": "아, 지금 바빠서요. 나중에 하면 안 돼요?", "t2g": "음… 그럼 뭐 하시려는 건데요? 길게 하는 건 아니죠?", "t2b": "아니 지금 진짜 바쁘다니까요. 그냥 끊을게요.", "t3g": "5분 정도면 되는 거죠? 그럼 저녁에 문자 주세요.", "t3b": "일단 알겠어요. 근데 시간 날지 모르겠네요.", "end_g": "네, 문자 보내 주세요. 그때 연락드릴게요.", "end_b": "네네, 알겠습니다. (전화가 끊어졌습니다)", "model": ["바쁘신데 죄송합니다. 담당자가 바뀌어 인사만 드리려던 거라서요. 언제 통화 가능하실지 편한 시간만 알려주시겠어요?", "5분이면 충분합니다. 가입하신 보험이 지금 기준에 맞는지 확인만 해 드리는 거예요. 저녁에 문자 먼저 남겨 둘게요.", "네, 감사합니다. 오늘 저녁에 문자 드리겠습니다. 편하실 때 답 주세요."]}, {"id": "noneed", "title": "\"괜찮아요, 필요 없어요\"", "type": "C", "level": "기초", "context": "C타입 고객(36세, 운전자 보험만 보유). 안부 문자와 전화 후 보험 이야기라고 느껴 거절합니다.", "open": "보험은 이미 있어서 괜찮아요. 필요 없어요.", "t2g": "점검이요? 그게 뭐 해 주는 건데요?", "t2b": "또 보험 팔려는 거죠? 필요 없다니까요.", "t3g": "글쎄요… 그럼 가입하신 거 정리해서 한 번 보내 주세요. 보고 생각해 볼게요.", "t3b": "됐어요, 연락 안 하셔도 돼요.", "end_g": "네, 받아보고 연락드릴게요.", "end_b": "네, 끊겠습니다. (연락 거부 의사를 밝혔습니다)", "model": ["네, 필요 없으실 수 있죠. 팔려는 게 아니고, 가입하신 보험이 담당자 변경으로 잘 관리되고 있는지만 인사드리려던 거예요. 불편하신 점은 없으신가요?", "가입하신 보험 내용을 한 장으로 정리해 드리는 거예요. 가입 권유 없이 현황만 보내드릴게요. 문자로 받으시겠어요, 카톡이 편하세요?", "알겠습니다. 정리해서 보내드리고, 2주 뒤에 안부만 한 번 여쭙겠습니다."]}, {"id": "has_planner", "title": "\"제 담당 설계사가 따로 있어요\"", "type": "B", "level": "중급", "context": "B타입 고객(48세). 이관 이후에도 예전 설계사와 연락하고 있다고 말합니다.", "open": "저는 예전부터 알던 설계사분이 따로 있어서요. 굳이 연락 안 주셔도 돼요.", "t2g": "그래도 뭐 달라질 건 없는 거죠? 계약은 그대로고요?", "t2b": "제가 알아서 하고 있다니까요. 그분이 다 해 주세요.", "t3g": "음, 그럼 증권 정리해 주는 건 나쁘지 않겠네요. 이메일로 보내 주세요.", "t3b": "네, 알겠어요. 그럼 끊을게요.", "end_g": "네, 확인해 보고 필요하면 연락할게요.", "end_b": "네, 수고하세요.", "model": ["그렇군요, 이미 챙겨 주는 분이 계시면 든든하시겠어요. 저는 회사에서 담당자가 바뀐 계약의 수금과 관리 안내를 맡고 있어서 인사만 드렸습니다.", "네, 계약은 그대로이고 달라지는 건 없습니다. 납입·보장 현황만 정리해서 드릴 수 있어요. 필요하시면 담당 설계사분과 같이 보셔도 좋습니다.", "이메일로 정리본 보내드리겠습니다. 부담 없이 참고만 해 주세요. 필요하실 때 편하게 연락 주세요."]}, {"id": "burden", "title": "\"보험료가 부담돼서요\"", "type": "A", "level": "중급", "context": "A타입 고객(51세, 납입 연체). 보험료 납입 안내 전화에서 부담을 호소합니다. (영업 멘트 금지 상황)", "open": "요즘 형편이 어려워서 보험료가 부담돼요. 그냥 해지할까 생각 중이에요.", "t2g": "아… 사실 이번 달만 어려운 건데, 방법이 있을까요?", "t2b": "다들 보험 얘기만 하네요. 그냥 해지할게요.", "t3g": "그럼 어떻게 하면 되는지 알려 주세요. 일단 해지는 미룰게요.", "t3b": "알았어요. 생각해 볼게요.", "end_g": "네, 안내해 주신 대로 해 볼게요. 고맙습니다.", "end_b": "네, 끊을게요.", "model": ["형편이 어려우신 중에 연락드려서 죄송합니다. 해지하시기 전에 불이익이 없도록 현재 상태만 확인해 드리고 싶어요. 지금 연체 중인 상태부터 같이 확인해 봐도 될까요?", "납입이 늦어졌을 때 계약 유지에 영향이 있을 수 있어서, 가능한 방법이 있는지 확인해 안내드리겠습니다. 이번 달 부담되는 금액이 어느 정도인지 편하게 말씀해 주시겠어요?", "확인되는 대로 문자로 정리해 보내드리겠습니다. 결정은 천천히 하셔도 되고, 궁금하신 점은 언제든 연락 주세요."]}, {"id": "wary", "title": "\"보험 파는 전화죠?\"", "type": "E", "level": "중급", "context": "E타입 고객(33세). 낯선 번호로 온 전화에 경계심이 강합니다.", "open": "누구세요? 보험 파는 거 아니에요?", "t2g": "아, 담당자가 바뀌었다고요? 왜 바뀐 건데요?", "t2b": "수상한데요. 이런 전화 계속 오면 신고할 거예요.", "t3g": "그럼 제 계약 정보를 확인해 주시는 건가요? 뭐 말씀하실 건데요?", "t3b": "네, 알겠고요. 끊겠습니다.", "end_g": "음, 일단 문자로 먼저 보내 주세요. 보고 연락할게요.", "end_b": "네, 끊습니다.", "model": ["놀라셨죠, 죄송합니다. 가입하신 보험의 담당자가 바뀌어 안내드리려고 연락한 {FC}입니다. 판매 전화가 아니고, 불편하신 점이 없는지 인사드리는 거예요.", "회사 인사 이동으로 관리 담당이 바뀌었습니다. 제 이름과 소속은 문자로 먼저 보내드리겠습니다. 확인되시면 그때 편하게 연락 주세요.", "네, 지금 문자 보내드리겠습니다. 불편하시면 말씀 주세요. 바로 정리하겠습니다."]}, {"id": "think", "title": "\"생각해 볼게요 / 나중에 연락할게요\"", "type": "B", "level": "심화", "context": "B타입 고객(45세). 보장 점검 안내 후 소극적으로 미루며 마무리하려 합니다.", "open": "점검 얘기는 알겠는데, 생각해 보고 제가 나중에 연락드릴게요.", "t2g": "음… 어떤 부분이 궁금해야 하는 건데요?", "t2b": "그래요. 연락드릴 테니 기다려 주세요.", "t3g": "그럼 다음 주쯤 한 번 전화 주실래요? 그때 얘기해 볼게요.", "t3b": "네, 연락드릴게요.", "end_g": "네, 다음 주에 통화해요. 그때 증권도 준비해 놓을게요.", "end_b": "네, 그럼 수고하세요.", "model": ["네, 천천히 생각해 보셔도 좋습니다. 판단하시기 편하도록 가입하신 내용 요약 한 장만 먼저 보내드릴까요? 보시고 궁금한 점이 생기면 연락 주세요.", "지금 보장이 요즘 기준과 얼마나 다른지, 그리고 가족 증권까지 같이 보면 관리가 편한지 정도입니다. 부담 갖지 않으셔도 되는 정리본이에요.", "그럼 다음 주 수요일 저녁에 안부 겸 한 번만 연락드려도 될까요? 그날 어려우시면 편한 요일 말씀해 주세요."]}]}/*EDU_END*/;
+let RP=null;
+function eduState(){S.edu=S.edu||{done:{}};S.edu.done=S.edu.done||{};S.rp=S.rp||[];}
+function eduCounts(){
+  eduState(); const tot=EDU.curriculum.reduce((a,w)=>a+w.checks.length,0);
+  const per=EDU.curriculum.map(w=>w.checks.filter((_,i)=>S.edu.done[`w${w.week}c${i}`]).length);
+  return {tot,done:per.reduce((a,b)=>a+b,0),per};
+}
+function eduProg(){
+  const c=eduCounts(); const e=$("#prog-all"); if(!e)return;
+  e.textContent=`${c.done} / ${c.tot}`; $("#prog-bar").style.width=(c.tot?c.done/c.tot*100:0)+"%";
+  EDU.curriculum.forEach((w,i)=>{const x=$("#prog-w"+w.week); if(x)x.textContent=`점검 ${c.per[i]}/${w.checks.length}`;});
+}
+function toggleEdu(k,v){eduState();S.edu.done[k]=v;save();eduProg();}
+function rpStats(){eduState(); const n=S.rp.length; const avg=n?Math.round(S.rp.reduce((a,r)=>a+r.avg,0)/n):0;
+  const best={}; S.rp.forEach(r=>{best[r.id]=Math.max(best[r.id]||0,r.avg);}); return {n,avg,best};}
+function vEdu(){
+  eduState(); const c=eduCounts(), rs=rpStats();
+  $("#main").innerHTML=`<h2>신인 교육 4주 커리큘럼</h2>
+  <p class="hint">순수 신인용 4주 과정입니다. 주차별로 펼쳐 일정을 보고, 주말 점검 항목을 체크하세요. 목표 수치는 예시이니 인원·업무량에 맞게 조정하세요. 같은 내용이 폴더의 <b>신인교육안_4주.docx</b>에도 있습니다.</p>
+  <div class="card"><div class="row"><b>전체 점검 진행</b><span id="prog-all">${c.done} / ${c.tot}</span>
+   <div class="bar" style="flex:1"><i id="prog-bar" style="width:${c.tot?c.done/c.tot*100:0}%"></i></div>
+   <span class="small">롤플레잉 ${rs.n}회 · 평균 ${rs.avg}점</span><button class="b noprint" onclick="document.querySelectorAll('details').forEach(d=>d.open=true);window.print()">인쇄·PDF 저장</button></div></div>
+  ${EDU.curriculum.map(w=>`<details class="card" ${w.week===1?"open":""}><summary style="cursor:pointer"><b>${w.week}주차 · ${esc(w.title)}</b> <span class="small" id="prog-w${w.week}">점검 ${c.per[w.week-1]}/${w.checks.length}</span></summary>
+   <p><b>목표</b> ${esc(w.goal)}</p>
+   <div class="tw"><table><tr><th style="width:70px">일차</th><th style="width:170px">주제</th><th>활동</th><th style="width:170px">산출물</th></tr>
+   ${w.days.map(d=>`<tr><td><b>${esc(d.day)}</b></td><td>${esc(d.title)}</td><td><ul style="margin:0;padding-left:18px">${d.activities.map(a=>`<li>${esc(a)}</li>`).join("")}</ul></td><td>${esc(d.output)}</td></tr>`).join("")}</table></div>
+   <p style="margin:12px 0 4px"><b>주말 점검</b></p>
+   ${w.checks.map((t,i)=>`<label style="display:block;padding:3px 0"><input type="checkbox" ${S.edu.done[`w${w.week}c${i}`]?"checked":""} onchange="toggleEdu('w${w.week}c${i}',this.checked)"> ${esc(t)}</label>`).join("")}
+   <p class="small" style="margin-top:8px">${esc(w.target)}</p></details>`).join("")}
+  <h2 style="margin-top:18px">상품별 핵심 화법</h2>
+  <p class="hint">점검 질문으로 현황을 확인하고 → 보장 공백을 객관적으로 짚는 순서입니다. 아래는 예시이며, 상품 내용·약관·지급 조건은 반드시 회사 자료 기준으로 확인하세요.</p>
+  ${EDU.products.map(p=>`<details class="card"><summary style="cursor:pointer"><b>${esc(p.name)}</b></summary>
+    <p style="margin:8px 0 2px"><b>점검 질문</b></p><ul style="margin:0;padding-left:18px">${p.ask.map(a=>`<li>${esc(a)}</li>`).join("")}</ul>
+    <p style="margin:8px 0 2px"><b>짚어볼 공백</b> ${esc(p.gap)}</p>
+    <div class="msg">${esc(p.script)}</div>
+    <p class="small" style="margin-top:6px">⚠ ${esc(p.caution)}</p></details>`).join("")}`;
+}
+
+const RX={
+ emp:/(그렇죠|그러시|바쁘시|죄송|알겠습니다|이해|힘드|걱정|놀라|감사|든든|그러셨|그렇군요|네,)/,
+ nxt:/(보내드리|보내 드리|문자|카톡|이메일|다음 주|내일|저녁|오전|오후|일정|연락드리|전화드리|정리해|확인해 드리|안내드리|여쭙|드릴게요)/,
+ q:/(\?|까요|실까요|시겠어요|괜찮으|편하)/,
+ ban:/(반드시|무조건|꼭 해야|손해|큰일|지금 안 하면|마지막 기회|이번 달까지|놓치면|후회|안 하면)/,
+ sell:/(가입하세요|가입해 ?보|가입을 권|상품 추천|추천드립니다|신규 계약|새로 가입|계약하시)/
+};
+function evalReply(text){
+  const t=text.trim(), long=t.length>160, short=t.length<15;
+  const items=[
+   {label:"공감·수용 표현",w:25,ok:RX.emp.test(t),tip:"먼저 상대의 상황을 받아 주세요. 예) \"바쁘신데 죄송합니다\", \"그렇게 느끼실 수 있죠\""},
+   {label:"다음 행동 제안",w:25,ok:RX.nxt.test(t),tip:"대화를 끊지 말고 작은 다음 단계를 제안하세요. 예) \"문자로 정리해서 보내드릴게요\", \"다음 주에 안부만 드릴게요\""},
+   {label:"질문·선택지",w:20,ok:RX.q.test(t),tip:"상대가 고르게 하세요. 예) \"문자와 카톡 중 어느 쪽이 편하세요?\""},
+   {label:"간결함 (15~160자)",w:15,ok:!long&&!short,tip:long?"너무 깁니다. 한 번에 한 가지만 말하세요.":"너무 짧습니다. 한 문장 더 보태 부드럽게 이어가세요."},
+   {label:"압박·상품 권유 없음",w:15,ok:!RX.ban.test(t)&&!RX.sell.test(t),tip:"'반드시·무조건·손해' 같은 압박이나 즉석 가입 권유는 빼세요. 첫 연락의 목적은 관계와 현황 확인입니다."}];
+  return {items,score:items.reduce((a,i)=>a+(i.ok?i.w:0),0)};
+}
+function vRole(){
+  eduState(); if(RP){rpChat();return;}
+  const rs=rpStats();
+  $("#main").innerHTML=`<h2>거절 대응 롤플레잉</h2>
+  <p class="hint">가상 고객의 거절 한마디에 답을 직접 써 보세요. 공감 → 질문 → 다음 제안이 들어 있는지 점수와 피드백이 나옵니다. 3번 주고받으면 끝나고 모범 답변을 보여드립니다.
+  <b>점수는 문장 속 표현을 보는 규칙 기반 채점이라 참고용</b>이며, AI가 대화를 생성하는 방식은 아닙니다. 자유로운 AI 연습은 각 시나리오의 [AI 연습 프롬프트 복사]를 챗GPT·클로드에 붙여넣어 하세요.</p>
+  <div class="grid g4" style="margin-bottom:12px"><div class="stat"><b>${rs.n}</b><span>연습 횟수</span></div><div class="stat"><b>${rs.avg}</b><span>평균 점수</span></div>
+   <div class="stat"><b>${Object.keys(rs.best).length}/${EDU.scenarios.length}</b><span>도전한 거절 유형</span></div></div>
+  ${EDU.scenarios.map(s=>`<div class="card"><div class="row"><span class="badge t${s.type}">${s.type}</span><b>${esc(s.title)}</b><span class="small">${esc(s.level)}${rs.best[s.id]!=null?` · 최고 ${rs.best[s.id]}점`:""}</span></div>
+   <p class="small" style="margin:6px 0">${esc(s.context)}</p>
+   <div class="row"><button class="b pri" onclick="startRp('${s.id}')">연습 시작</button><button class="b" onclick="copy(rpPrompt('${s.id}'))">AI 연습 프롬프트 복사</button></div></div>`).join("")}
+  ${rs.n?`<h2 style="margin-top:16px">최근 연습</h2><div class="tw"><table><tr><th>날짜</th><th>시나리오</th><th>점수</th></tr>${[...S.rp].reverse().slice(0,10).map(r=>`<tr><td>${r.date}</td><td>${esc(r.title)}</td><td>${r.avg}</td></tr>`).join("")}</table></div>`:""}`;
+}
+function startRp(id){RP={sc:EDU.scenarios.find(s=>s.id===id),turn:0,log:[],done:false,avg:0};RP.log.push({who:"c",text:RP.sc.open});vRole();window.scrollTo(0,0);}
+function rpChat(){
+  const sc=RP.sc;
+  $("#main").innerHTML=`<div class="row" style="margin-bottom:8px"><button class="b" onclick="RP=null;vRole()">← 목록</button><b>${esc(sc.title)}</b><span class="badge t${sc.type}">${sc.type}</span></div>
+  <div class="card small">${esc(sc.context)}</div>
+  <div class="card" style="background:#fbfcff">${RP.log.map(m=>m.who==="c"?
+   `<div style="margin:10px 0"><div class="small">🙍 가상 고객</div><div class="msg" style="display:inline-block;max-width:85%">${esc(m.text)}</div></div>`:
+   `<div style="margin:10px 0;text-align:right"><div class="small">나 (${esc(S.set.fc)})</div><div class="msg" style="display:inline-block;max-width:85%;text-align:left;background:#e8f0fe">${esc(m.text)}</div>
+    <div class="card" style="text-align:left;margin:6px 0 0"><b>${m.fb.score}점</b> <span class="small">(이번 답변)</span>
+    ${m.fb.items.map(i=>`<div class="small" style="margin-top:3px">${i.ok?"✅":"❌"} ${esc(i.label)}${i.ok?"":` — ${esc(i.tip)}`}</div>`).join("")}</div></div>`).join("")}
+  ${RP.done?rpSummary():`<textarea id="rp-in" rows="3" placeholder="고객에게 할 답변을 써 보세요 (Ctrl+Enter로 보내기)"></textarea>
+   <div class="row" style="margin-top:8px"><button class="b pri" onclick="sendRp()">답변 보내기 (${RP.turn+1}/3)</button></div>`}</div>`;
+  const ta=$("#rp-in"); if(ta){ta.focus();ta.addEventListener("keydown",e=>{if(e.key==="Enter"&&(e.ctrlKey||e.metaKey))sendRp();});}
+}
+function sendRp(){
+  const ta=$("#rp-in"); const text=ta.value.trim(); if(!text){toast("답변을 먼저 써 주세요");return;}
+  const sc=RP.sc, fb=evalReply(text), good=fb.score>=60;
+  RP.log.push({who:"u",text,fb}); RP.turn++;
+  if(RP.turn<3) RP.log.push({who:"c",text:sc[RP.turn===1?(good?"t2g":"t2b"):(good?"t3g":"t3b")]});
+  else {RP.log.push({who:"c",text:good?sc.end_g:sc.end_b}); RP.done=true;
+    const sc2=RP.log.filter(m=>m.who==="u").map(m=>m.fb.score); RP.avg=Math.round(sc2.reduce((a,b)=>a+b,0)/sc2.length);
+    S.rp.push({date:fmt(today()),id:sc.id,title:sc.title,avg:RP.avg,scores:sc2}); save();}
+  rpChat();
+}
+function rpSummary(){
+  const sc=RP.sc, msg=a=>esc(a.replace(/\{FC\}/g,S.set.fc));
+  return `<div class="card" style="border-left:5px solid ${RP.avg>=70?"#2e7d32":"#ef6c00"}"><b>연습 종료 · 평균 ${RP.avg}점</b> <span class="small">${RP.avg>=70?"졸업 기준(70점) 통과":"70점을 목표로 한 번 더 해 보세요"}</span>
+   <p style="margin:10px 0 4px"><b>모범 답변 예시</b> <span class="small">(그대로 외우지 말고 본인 말투로)</span></p>
+   ${sc.model.map((m,i)=>`<div class="small" style="margin-top:6px">${i+1}번째 답변</div><div class="msg">${msg(m)}</div>`).join("")}
+   <div class="row" style="margin-top:12px"><button class="b pri" onclick="startRp('${sc.id}')">같은 상황 다시</button><button class="b" onclick="RP=null;vRole()">다른 거절 유형</button>
+   <button class="b" onclick="copy(rpPrompt('${sc.id}'))">AI 연습 프롬프트 복사</button></div></div>`;
+}
+function rpPrompt(id){
+  const s=EDU.scenarios.find(x=>x.id===id);
+  return `너는 보험 고객 역할을 맡은 롤플레잉 상대야. 나는 이관·수금 고객을 담당하게 된 신입 FC이고, 거절 대응을 연습하고 싶어.\n\n[상황] ${s.context}\n[첫 대사] 고객: "${s.open}"\n\n규칙:\n1) 너는 고객으로서만 말하고, 한 번에 한 마디씩 짧고 현실적으로 말해.\n2) 내 답변에 공감·질문·다음 행동 제안이 있으면 조금씩 누그러지고, 압박·과장·즉석 가입 권유가 있으면 더 강하게 거절해.\n3) 3~4번 주고받으면 "연습 종료"라고 말하고, 아래 5가지 기준으로 100점 만점 피드백과 개선 문장을 줘: 공감 / 다음 행동 제안 / 질문·선택지 / 간결함 / 압박·권유 없음.\n4) 실제 고객 이름이나 개인정보는 사용하지 마.\n\n지금 첫 대사부터 시작해.`;
+}
+PAGES.splice(PAGES.findIndex(p=>p[0]==="check"),0,["edu","신인교육"],["role","롤플레잉"]);
+/* ================= 4단계: 순수 DB · 법인영업 ================= */
+const DBD=/*DB_START*/{"db": {"principles": ["빠르게: 상담 신청이 들어오면 5분 안에 첫 연락을 시도합니다 (예시 목표, 시간대에 맞게 조정).", "한 번에 하나만: 한 번 연락에 질문은 한 가지, 요청은 한 가지만 합니다.", "상품이 아니라 상황부터: 가족 구성·현재 보험·걱정거리를 먼저 묻고 상품은 나중에 말합니다.", "말이 아니라 종이로: 상담은 '요약 브리핑지'로 현황을 정리해 보여주고 결정은 고객이 합니다.", "다음 약속으로 끝내기: 모든 연락은 다음 일정(통화·미팅·문자)을 잡고 마칩니다.", "정보 출처·동의 확인: 신청 경로와 개인정보 이용 동의 범위를 확인하고 그 안에서만 연락합니다 (회사 기준 준수)."], "stages": [{"name": "1. 접수 · 확인", "time": "접수 즉시~5분", "goal": "신청 내용과 연락 가능 범위를 확인하고 첫 연락을 준비한다.", "actions": ["신청 경로(광고·홈페이지·소개 등)와 신청 내용 확인", "개인정보 수집·이용 동의 범위 확인 (회사 기준)", "이름·연락처·희망 상담 시간 확인", "프로그램 [순수DB] 탭에 접수 등록"], "script": "", "tip": "접수 시각이 기록되어야 '첫 연락까지 몇 분 걸렸는지'를 알 수 있습니다."}, {"name": "2. 첫 문자(사전 안내)", "time": "접수 후 5분 이내", "goal": "갑작스러운 전화가 아니도록 먼저 이름과 목적을 알린다.", "actions": ["신청에 대한 감사", "내 이름·소속·연락 목적 한 줄", "통화 가능 시간 묻기"], "script": "{고객명}님 안녕하세요, 보험 상담 신청해 주셔서 감사합니다. 담당 {FC}입니다. 편하신 시간에 5분 정도 전화드려도 될까요? 가능하신 시간대를 알려 주세요.", "tip": "문자에 상품 이야기나 금액을 넣지 않습니다."}, {"name": "3. 첫 통화", "time": "5~10분", "goal": "상황을 3가지만 파악하고 상담 일정을 잡는다.", "actions": ["인사·신청 확인(30초)", "상황 질문 3가지: 가족 구성 / 현재 가입 현황 / 신청 계기", "현황 정리를 제안(상품 설명 X)", "상담 일정 확정"], "script": "{고객명}님 안녕하세요, 상담 신청해 주셔서 연락드린 {FC}입니다. 지금 통화 괜찮으세요? 먼저 몇 가지만 여쭤볼게요. 지금 가족은 어떻게 되시고, 보험은 어떤 걸 가입해 두셨는지, 그리고 상담을 신청하게 된 계기가 있으셨는지요?", "tip": "고객 말이 길어지면 끊지 말고 메모합니다. 마무리는 \"말씀 주신 내용으로 현황을 한 장으로 정리해 드릴게요\"."}, {"name": "4. 상담 일정 확정", "time": "통화 마무리", "goal": "대면·통화·영상 중 고르게 하고 준비물을 안내한다.", "actions": ["선택지 제시: 대면 / 통화 / 영상", "준비물 안내(가입 보험 증권·내역 등, 필요 시 회사 절차에 따른 조회 동의)", "일정 문자로 재확인"], "script": "그럼 정리해서 설명드리는 자리를 잡아볼게요. 직접 뵙는 것과 전화·영상 중 어느 쪽이 편하세요? 날짜는 이번 주와 다음 주 중 어느 쪽이 좋으실까요?", "tip": "'언제 시간 되세요?'보다 '이번 주/다음 주 중 어느 쪽이 좋으세요?'처럼 선택지로 묻습니다."}, {"name": "5. 상담 진행", "time": "30~60분", "goal": "요약 브리핑지로 현황을 객관적으로 정리하고 고객이 결정하게 한다.", "actions": ["현황 확인(가입 내역·월 보험료)", "보장 공백을 질문으로 확인", "선택지 2~3개 제시(지금 결정 / 보완 후 재검토 / 유지)", "결정을 강요하지 않고 다음 약속 확정"], "script": "오늘 정리해 온 내용으로 현재 가입 현황부터 보시겠습니다. 중간에 궁금하신 점은 바로 말씀 주세요. 마지막에 어떻게 하실지는 천천히 정하셔도 됩니다.", "tip": "설득하는 사람이 아니라 현황을 정리해 주는 사람이라는 인상을 만듭니다."}, {"name": "6. 후속 관리", "time": "상담 후 48시간~2주", "goal": "약속된 리듬으로 연락해 '한 번 보고 끝나는 영업'이 되지 않게 한다.", "actions": ["48시간 안에 요약 문자", "2주 뒤 안부와 추가 확인", "미결정 고객은 다음 연락일을 기록하고 재연락", "소개·가족 증권 점검 제안"], "script": "{고객명}님, 어제 시간 내 주셔서 감사합니다. 말씀 나눈 내용 요약해서 보내드립니다. 궁금하신 점은 편하게 연락 주세요. 2주쯤 뒤에 안부 한 번만 여쭙겠습니다.", "tip": "계약 여부와 관계없이 연락 리듬은 지킵니다."}], "questions": [{"q": "지금 가족 구성이 어떻게 되세요? (결혼, 자녀, 부모님 부양)", "why": "필요한 보장의 우선순위를 가르는 가장 기본 정보"}, {"q": "지금 가입해 두신 보험은 어떤 것이 있으세요? 내용은 정리해 두셨나요?", "why": "현재 가입 현황과 공백 파악, 현황 정리 제안으로 연결"}, {"q": "상담을 신청하시게 된 계기가 있으셨나요?", "why": "고객이 가장 걱정하는 것을 먼저 다루기 위해"}], "objections": [{"title": "연락이 안 될 때 (부재·무응답)", "reply": "한 번 부재 시: 이름과 목적을 담은 문자를 남기고(상품·금액 제외), 같은 날 저녁 또는 다음 날 오전에 한 번 더 시도합니다. 연속 3회 이상 연락이 안 되면 다음 연락일을 1~2주 뒤로 잡고 안부 문자로 마무리합니다."}, {"title": "\"가격부터 알려 주세요\"", "reply": "\"금액은 어떤 보장을 넣느냐에 따라 달라져서요. 현재 가입 내용과 걱정되는 점만 먼저 알려 주시면 비교하기 쉬운 형태로 정리해서 보내드릴게요.\""}, {"title": "\"비교만 해 보고 싶어요\"", "reply": "\"좋은 방법입니다. 비교하시기 쉽게 지금 가입하신 내용을 한 장으로 먼저 정리해 드릴게요. 정리본은 다른 곳 상담 때도 쓰실 수 있습니다.\""}, {"title": "\"다른 곳에서도 상담 받고 있어요\"", "reply": "\"네, 충분히 비교해 보시는 게 좋죠. 저는 현황을 정리해서 객관적으로 보여드리는 데 집중하겠습니다. 가장 궁금하신 한 가지만 먼저 알려 주시겠어요?\""}], "checklist": ["접수 후 5분 안에 첫 연락(문자 또는 전화)을 했다 (예시 목표)", "신청 경로와 개인정보 이용 동의 범위를 확인했다", "첫 통화에서 가족·현재 보험·신청 계기를 파악했다", "상담 일정을 선택지로 확정하고 문자로 재확인했다", "상담 때 요약 브리핑지를 사용했고 결정을 강요하지 않았다", "48시간 안에 요약 문자를 보냈다", "다음 연락일을 기록했다"]}, "industries": [{"name": "제조업", "hook": "공장·설비·재고가 핵심 자산이라, 사고나 화재가 나면 가동 중단이 곧 매출 공백이 되는 업종입니다.", "risk": true}, {"name": "건설업", "hook": "현장 안전과 하자·배상 이슈가 늘 따라다니는 업종이라, 사고 시 책임 범위를 미리 점검해 두는 대표님들이 많습니다.", "risk": true}, {"name": "도소매·유통", "hook": "재고와 매장 자산, 거래처 대금 흐름이 핵심이라 자산 보호와 대표 유고 시 운영 연속성이 주요 관심사입니다.", "risk": false}, {"name": "음식·숙박", "hook": "화재, 식중독·고객 사고 같은 배상 이슈와 직원 안전이 일상적인 업종입니다.", "risk": true}, {"name": "IT·서비스", "hook": "사람이 곧 자산인 업종이라 대표와 핵심 인력의 공백, 직원 복지와 이탈 방지가 주요 관심사입니다.", "risk": false}, {"name": "의료·병원", "hook": "의료 배상과 시설 자산, 원장님 개인의 리스크가 곧 병원 운영 리스크로 이어지는 업종입니다.", "risk": true}, {"name": "운수·물류", "hook": "차량 사고와 화물 배상, 운전자 안전이 핵심이라 사고 시 책임 범위를 점검하는 것이 중요합니다.", "risk": true}, {"name": "기타", "hook": "회사마다 사정이 달라서, 대표님이 가장 걱정하시는 부분부터 여쭙고 현황을 정리해 드리는 방식으로 접근합니다.", "risk": false}], "needs": [{"k": "ceo", "name": "대표 유고 대비", "why": "대표의 공백이 곧 회사의 운영·자금 공백으로 이어질 수 있습니다.", "q": ["대표님께 만약 일이 생기면 회사 운영과 자금은 누가 어떻게 이어가나요?", "현재 대표님 보장은 개인 계약인가요, 법인 계약인가요?", "후계자나 대행 체제에 대한 계획이 있으세요?"], "dir": "대표 보장 현황을 정리하고, 필요한 보장 규모와 계약 구조(계약자·수익자)를 비교 설명합니다."}, {"k": "retire", "name": "퇴직금 재원 마련", "why": "임직원 퇴직금은 시점이 정해져 있지 않아도 반드시 지급해야 하는 자금입니다.", "q": ["퇴직금은 지금 어떻게 준비하고 계세요? 퇴직연금에 가입돼 있나요?", "임원 퇴직금 규정이 있으신가요?", "퇴직금 시기가 한꺼번에 몰릴 가능성은 없나요?"], "dir": "퇴직금 재원 현황을 확인하고, 시기별 소요 자금을 정리해 준비 방식을 비교합니다. (제도·세무는 전문가 확인)"}, {"k": "group", "name": "직원 복지 · 단체보험", "why": "직원 복지는 이탈 방지와 채용 경쟁력에 직접 영향을 줍니다.", "q": ["직원분들께 제공하는 복지나 보험이 있나요?", "직원이 다치거나 아프면 회사가 부담하는 부분은 어디까지인가요?", "채용·정착에서 복지가 이슈가 된 적이 있나요?"], "dir": "현재 복지 현황을 정리하고 직원 규모에 맞는 단체 보장 방식을 비교합니다."}, {"k": "property", "name": "사업장·재물 자산 보호", "why": "화재·파손으로 인한 자산 손실과 영업 중단은 회사 자금에 큰 부담이 됩니다.", "q": ["사업장·설비·재고에 화재나 재물 관련 보험이 가입돼 있나요?", "가입 금액이 현재 자산 가치에 맞는지 최근에 확인하셨나요?", "사고로 영업이 멈추면 며칠까지 버틸 수 있으세요?"], "dir": "보유 자산 목록과 가입 현황을 대조해 보장 금액과 범위를 점검합니다."}, {"k": "liab", "name": "배상책임 · 업무 리스크", "why": "업무 중 사고나 고객·제3자 피해에 대한 책임이 회사에 돌아올 수 있습니다.", "q": ["업무 중 제3자나 고객에게 피해를 입힌 경우 책임은 어떻게 준비하고 계세요?", "최근 안전 관리나 계약 책임 관련해 걱정되는 부분이 있나요?", "배상책임 보험은 보장 범위와 한도를 확인해 두셨나요?"], "dir": "업종 특성에 맞는 리스크를 정리하고 현재 보장의 범위·한도·제외 사항을 점검합니다."}, {"k": "succ", "name": "승계 · 자산 정리 (전문가 연계)", "why": "승계, 가지급금, 자산 정리는 세무·법무 이슈가 함께 걸려 있어 사전 점검이 중요합니다.", "q": ["후계 구도에 대해 어느 정도 생각해 두셨나요?", "회사 재무상 정리가 필요한 항목(예: 가지급금)이 있는지 세무사님과 이야기해 보셨나요?", "개인 자산과 법인 자산이 섞여 걱정되는 부분이 있나요?"], "dir": "현황을 질문으로 정리하되, 세무·법무 판단은 담당 세무사·법무 전문가 및 회사 법인 지원팀과 연계합니다."}], "corp": {"flow": [{"name": "1. 사전 조사 (미팅 전)", "items": ["회사 홈페이지·사업자 정보로 업종, 규모, 설립연도 확인", "프로그램 [법인영업] 탭에 정보 입력 → 1페이지 브리핑 생성", "대표 관심사 TOP3와 질문 5개 숙지", "준비물: 브리핑 1페이지, 현황 점검표, 명함"]}, {"name": "2. 미팅 (30~40분)", "items": ["인사와 업종 이해 표현(오프닝 멘트)", "질문 중심 진행: 대표님 말씀을 듣고 메모 70%, 제안 30%", "현황 점검표로 가입 현황과 공백 확인", "제안 방향은 2~3개만, 결정 강요 금지", "다음 미팅 일정(자료 보완·제안서 설명) 확정"]}, {"name": "3. 제안서 초안 (미팅 후 3일 내)", "items": ["프로그램에서 제안서 초안 생성 후 미팅 내용으로 수정", "수치·상품 내용은 회사 자료와 약관 기준으로 채움", "세무·법무 사항은 전문가 확인이 필요하다고 명시"]}, {"name": "4. 후속", "items": ["48시간 안에 미팅 요약 문자", "제안서 설명 미팅 일정 확정", "연 1회 이상 정기 점검 일정 제안"]}], "rules": ["보험료 절감·세금 효과 등을 단정하거나 약속하지 않습니다. 세무·법무·회계는 반드시 전문가 확인.", "상품 내용·지급 조건·면책은 약관과 회사 심의 자료 기준으로만 안내합니다.", "법령과 세제는 바뀔 수 있으니 최신 기준을 회사 법인 지원팀 등에서 확인합니다.", "고객사 정보(회사명·대표 이름)를 외부 AI 서비스에 넣을 때는 가명 처리합니다."]}}/*DB_END*/;
+function stage4(){S.leads=S.leads||[];S.corp=S.corp||[];}
+const fillFC=t=>t.replace(/\{FC\}/g,S.set.fc).replace(/\{고객명\}/g,"○○");
+
+function vDb(){
+  stage4(); const M=DBD.db;
+  $("#main").innerHTML=`<h2>순수 DB 초회 상담</h2>
+  <p class="hint">광고·홈페이지 등으로 들어온 <b>상담 신청 고객(순수 DB)</b>을 놓치지 않고 첫 연락 → 상담 → 후속까지 이어가는 동선입니다. 아래 매뉴얼을 보고, 접수된 고객은 맨 아래 <b>접수 관리표</b>에 등록하세요.</p>
+  <div class="card"><b>원칙</b><ul style="margin:6px 0 0;padding-left:18px;line-height:1.7">${M.principles.map(p=>`<li>${esc(p)}</li>`).join("")}</ul></div>
+  ${M.stages.map(s=>`<details class="card"><summary style="cursor:pointer"><b>${esc(s.name)}</b> <span class="small">· ${esc(s.time)}</span></summary>
+   <p style="margin:8px 0 4px"><b>목표</b> ${esc(s.goal)}</p>
+   <ul style="margin:0;padding-left:18px">${s.actions.map(a=>`<li>${esc(a)}</li>`).join("")}</ul>
+   ${s.script?`<div class="msg">${esc(fillFC(s.script))}</div><div style="margin-top:6px"><button class="b" onclick="copy(${esc(JSON.stringify(fillFC(s.script)))})">📋 복사</button></div>`:""}
+   <p class="small" style="margin-top:8px">💡 ${esc(s.tip)}</p></details>`).join("")}
+  <div class="card"><b>첫 통화 핵심 질문 3가지</b>${M.questions.map(q=>`<div class="ck"><b>${esc(q.q)}</b><div class="small">${esc(q.why)}</div></div>`).join("")}</div>
+  <details class="card"><summary style="cursor:pointer"><b>자주 나오는 반응과 대응</b></summary>${M.objections.map(o=>`<div class="ck"><b>${esc(o.title)}</b><div class="msg">${esc(o.reply)}</div></div>`).join("")}</details>
+  <details class="card"><summary style="cursor:pointer"><b>초회 상담 체크리스트</b></summary><ul style="line-height:1.8;margin:8px 0 0;padding-left:18px">${M.checklist.map(c=>`<li>${esc(c)}</li>`).join("")}</ul></details>
+  <h2 style="margin-top:18px">접수 관리표</h2>
+  <div class="card"><div class="row">
+   <input id="ld-name" placeholder="고객명(가명 가능)" style="width:140px">
+   <select id="ld-src"><option>광고</option><option>홈페이지</option><option>소개</option><option>기타</option></select>
+   <input type="datetime-local" id="ld-recv">
+   <label><input type="checkbox" id="ld-consent"> 개인정보 이용 동의 확인</label>
+   <input id="ld-memo" placeholder="메모(신청 내용)" style="flex:1;min-width:160px">
+   <button class="b pri" onclick="addLead()">접수 등록</button></div></div>
+  <div id="ld-list"></div>`;
+  const n=new Date(); n.setMinutes(n.getMinutes()-n.getTimezoneOffset()); $("#ld-recv").value=n.toISOString().slice(0,16);
+  leadList();
+}
+function addLead(){
+  stage4(); const name=$("#ld-name").value.trim(); if(!name){toast("고객명을 입력하세요");return;}
+  S.leads.push({id:String(Date.now()),name,src:$("#ld-src").value,recv:$("#ld-recv").value,consent:$("#ld-consent").checked,memo:$("#ld-memo").value.trim(),stage:0,next:"",first:""});
+  save(); $("#ld-name").value="";$("#ld-memo").value=""; leadList(); toast("접수 등록했습니다");
+}
+function leadList(){
+  stage4(); const st=DBD.db.stages, T=fmt(today());
+  const ls=[...S.leads].sort((a,b)=>(a.stage>=6)-(b.stage>=6)||(a.next||"9").localeCompare(b.next||"9"));
+  $("#ld-list").innerHTML=ls.length?`<div class="tw"><table><tr><th>고객</th><th>경로</th><th>접수</th><th>단계</th><th>다음 연락일</th><th>메모</th><th></th></tr>
+  ${ls.map(l=>{const done=l.stage>=6; const mins=l.recv?Math.round((Date.now()-new Date(l.recv))/6e4):null;
+    const late=!done&&l.stage===0&&mins!=null&&mins>5; const due=!done&&l.next&&l.next<=T;
+    return `<tr style="${due?"background:#fff8e1":""}"><td><b>${esc(l.name)}</b>${l.consent?"":` <span class="badge tA">동의 확인 필요</span>`}</td><td>${esc(l.src)}</td>
+    <td class="small">${esc((l.recv||"").replace("T"," "))}${late?`<br><span style="color:var(--bad)"><b>첫 연락 ${mins>=60?Math.floor(mins/60)+"시간 ":""}${mins%60}분 경과</b></span>`:""}</td>
+    <td>${done?"✅ 완료":`<select onchange="updLead('${l.id}','stage',+this.value)">${st.map((s,i)=>`<option value="${i}" ${i===l.stage?"selected":""}>${esc(s.name)}</option>`).join("")}<option value="6">완료</option></select>`}</td>
+    <td><input type="date" value="${esc(l.next)}" onchange="updLead('${l.id}','next',this.value)">${due?` <span class="badge tB">오늘 할 일</span>`:""}</td>
+    <td><input value="${esc(l.memo)}" style="width:150px" onchange="updLead('${l.id}','memo',this.value)"></td>
+    <td><div class="row">${!done?`<button class="b" onclick="advLead('${l.id}')">다음 단계 ▶</button>`:""}${!done&&st[l.stage].script?`<button class="b" onclick="copy(${esc(JSON.stringify(fillFC(st[l.stage].script).replace("○○",l.name)))})">📋</button>`:""}<button class="b" onclick="delLead('${l.id}')">삭제</button></div></td></tr>`;}).join("")}</table></div>`:`<div class="card empty">접수된 고객이 없습니다.</div>`;
+}
+function updLead(id,f,v){const l=S.leads.find(x=>x.id===id); if(l){l[f]=v; if(f==="stage"&&v>0&&!l.first)l.first=fmt(today());} save(); leadList();}
+function advLead(id){const l=S.leads.find(x=>x.id===id); if(!l)return; l.stage=Math.min(6,l.stage+1); save(); leadList();}
+function delLead(id){if(confirm("이 접수를 삭제할까요?")){S.leads=S.leads.filter(x=>x.id!==id);save();leadList();}}
+
+/* ---- 법인영업 ---- */
+const SALES=["10억 미만","10~50억","50~100억","100억 이상","모름"];
+const ASSETS=["부동산","설비·장비","재고","차량"];
+const HAS=[["ceo","대표 보장 가입"],["retire","퇴직연금·퇴직금 재원"],["group","단체보험"],["property","화재·재물보험"],["liab","배상책임보험"]];
+const PURPOSE={"첫 인사·현황 파악":"회사와 대표님의 걱정거리를 듣고, 현황 점검 일정을 약속한다.","보험 현황 점검":"현재 가입 현황을 점검표로 정리하고 공백 후보를 확인한다.","기존 계약 재점검":"기존 계약이 현재 회사 상황(규모·자산·직원 수)에 맞는지 확인한다."};
+function corpForm(d){
+  d=d||{}; const has=d.has||[], as=d.assets||[], sel=(arr,v)=>arr.map(o=>`<option ${o===v?"selected":""}>${esc(o)}</option>`).join("");
+  return `<div class="card"><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(190px,1fr))">
+   <div><label class="f">회사명 (가명 권장)</label><input id="co-name" style="width:100%" value="${esc(d.name||"")}"></div>
+   <div><label class="f">업종</label><select id="co-ind" style="width:100%">${sel(DBD.industries.map(i=>i.name),d.ind)}</select></div>
+   <div><label class="f">설립연도</label><input id="co-year" type="number" style="width:100%" value="${esc(d.year||"")}" placeholder="예: 2012"></div>
+   <div><label class="f">직원 수(명)</label><input id="co-staff" type="number" style="width:100%" value="${esc(d.staff||"")}"></div>
+   <div><label class="f">연 매출 구간</label><select id="co-sales" style="width:100%">${sel(SALES,d.sales||"모름")}</select></div>
+   <div><label class="f">대표 성함 (가명 권장)</label><input id="co-ceo" style="width:100%" value="${esc(d.ceo||"")}"></div>
+   <div><label class="f">대표 나이</label><input id="co-age" type="number" style="width:100%" value="${esc(d.age||"")}"></div>
+   <div><label class="f">후계 구도</label><select id="co-succ" style="width:100%">${sel(["해당 없음(대표 단독)","자녀 승계 예정","미정"],d.succ)}</select></div>
+   <div><label class="f">가지급금</label><select id="co-loan" style="width:100%">${sel(["모름","있음","없음"],d.loan)}</select></div>
+   <div><label class="f">미팅 목적</label><select id="co-purpose" style="width:100%">${sel(Object.keys(PURPOSE),d.purpose)}</select></div></div>
+   <label class="f">보유 자산</label><div class="row">${ASSETS.map(a=>`<label><input type="checkbox" name="co-as" value="${a}" ${as.includes(a)?"checked":""}> ${a}</label>`).join("")}</div>
+   <label class="f">현재 가입이 확인된 것 (모르면 체크하지 마세요)</label><div class="row">${HAS.map(([k,n])=>`<label><input type="checkbox" name="co-has" value="${k}" ${has.includes(k)?"checked":""}> ${n}</label>`).join("")}</div>
+   <label class="f">메모 (대표 성향·최근 이슈 등)</label><textarea id="co-memo" rows="2">${esc(d.memo||"")}</textarea>
+   <div class="row" style="margin-top:12px"><button class="b pri" onclick="genCorp()">브리핑·제안서 초안 만들기</button><button class="b" onclick="saveCorp()">고객사 저장</button><button class="b" onclick="corpNew()">새로 입력</button></div></div>`;
+}
+let CORP_ID=null;
+function corpRead(){
+  const g=id=>$("#"+id).value, chk=n=>[...document.querySelectorAll(`input[name=${n}]:checked`)].map(x=>x.value);
+  return {id:CORP_ID,name:g("co-name").trim(),ind:g("co-ind"),year:g("co-year"),staff:g("co-staff"),sales:g("co-sales"),ceo:g("co-ceo").trim(),age:g("co-age"),succ:g("co-succ"),loan:g("co-loan"),purpose:g("co-purpose"),assets:chk("co-as"),has:chk("co-has"),memo:g("co-memo").trim()};
+}
+function vCorp(){
+  stage4();
+  $("#main").innerHTML=`<h2>법인영업 비서</h2>
+  <p class="hint">기업 정보를 입력하면 <b>대표자 미팅용 1페이지 브리핑</b>과 <b>제안서 초안</b>을 만들어 줍니다. 입력한 정보에 맞춘 <b>규칙 기반 초안</b>(AI가 생성한 글이 아님)이며, 미팅 내용과 회사 자료로 반드시 보완하세요. 세무·법무 사항은 단정하지 않고 전문가 확인으로 안내합니다.</p>
+  <div id="co-form">${corpForm()}</div><div id="co-out"></div>
+  <h2 style="margin-top:18px">저장한 고객사</h2><div id="co-saved"></div>`;
+  corpSaved();
+}
+function corpSaved(){
+  stage4(); $("#co-saved").innerHTML=S.corp.length?`<div class="tw"><table><tr><th>회사</th><th>업종</th><th>직원</th><th>저장일</th><th></th></tr>${S.corp.map(c=>`<tr><td><b>${esc(c.name)}</b></td><td>${esc(c.ind)}</td><td>${esc(c.staff||"-")}</td><td>${esc(c.saved||"")}</td>
+   <td><div class="row"><button class="b" onclick="loadCorp('${c.id}')">불러오기</button><button class="b" onclick="delCorp('${c.id}')">삭제</button></div></td></tr>`).join("")}</table></div>`:`<div class="card empty">저장한 고객사가 없습니다.</div>`;
+}
+function saveCorp(){const d=corpRead(); if(!d.name){toast("회사명을 입력하세요");return;} stage4(); d.id=d.id||String(Date.now()); d.saved=fmt(today());
+  const i=S.corp.findIndex(x=>x.id===d.id); if(i>=0)S.corp[i]=d; else S.corp.push(d); CORP_ID=d.id; save(); corpSaved(); toast("저장했습니다");}
+function loadCorp(id){const d=S.corp.find(x=>x.id===id); if(!d)return; CORP_ID=id; $("#co-form").innerHTML=corpForm(d); $("#co-out").innerHTML=""; window.scrollTo(0,0);}
+function corpNew(){CORP_ID=null;$("#co-form").innerHTML=corpForm();$("#co-out").innerHTML="";}
+function delCorp(id){if(confirm("이 고객사를 삭제할까요?")){S.corp=S.corp.filter(x=>x.id!==id);if(CORP_ID===id)CORP_ID=null;save();corpSaved();}}
+
+function corpScore(d){
+  const yr=new Date().getFullYear(), age=+d.age||0, staff=+d.staff||0, comp=d.year?yr-(+d.year):0, ind=DBD.industries.find(i=>i.name===d.ind)||{risk:false,hook:""};
+  const has=k=>d.has.includes(k), bigSales=["50~100억","100억 이상"].includes(d.sales);
+  const out={};
+  const add=(k,s,r)=>{out[k]=out[k]||{s:0,r:[]}; out[k].s+=s; if(r)out[k].r.push(r);};
+  add("ceo",2); if(!has("ceo"))add("ceo",3,"대표 보장 가입이 확인되지 않음"); if(age>=60)add("ceo",2,`대표 나이 ${age}세`); else if(age>=50)add("ceo",1,`대표 나이 ${age}세`); if(d.succ==="미정")add("ceo",1,"후계 구도 미정");
+  add("retire",1); if(!has("retire"))add("retire",3,"퇴직금 재원 준비가 확인되지 않음"); if(staff>=10)add("retire",1,`직원 ${staff}명`); if(comp>=10)add("retire",1,`설립 ${comp}년차`);
+  if(staff>=5){add("group",2,`직원 ${staff}명`); if(!has("group"))add("group",3,"단체보험 가입이 확인되지 않음");}
+  if(d.assets.length){add("property",2,`보유 자산: ${d.assets.join(", ")}`); if(!has("property"))add("property",3,"화재·재물보험 가입이 확인되지 않음");}
+  add("liab",1); if(ind.risk)add("liab",2,`${d.ind}은 사고·배상 이슈가 잦은 업종`); if(!has("liab"))add("liab",3,"배상책임보험 가입이 확인되지 않음"); if(staff>=5)add("liab",1);
+  if(d.succ==="자녀 승계 예정")add("succ",3,"자녀 승계 예정"); else if(d.succ==="미정")add("succ",2,"후계 구도 미정"); if(d.loan!=="없음")add("succ",2,`가지급금 ${d.loan}`); if(bigSales)add("succ",1,`매출 ${d.sales}`);
+  return DBD.needs.map(n=>{const o=out[n.k]||{s:0,r:[]}; return Object.assign({},n,{s:o.s,reasons:o.r,level:o.s>=6?"높음":o.s>=4?"중간":"낮음"});}).sort((a,b)=>b.s-a.s);
+}
+function corpDocs(d){
+  const needs=corpScore(d), top=needs.slice(0,3), ind=DBD.industries.find(i=>i.name===d.ind)||{hook:""};
+  const ceo=d.ceo?d.ceo+" 대표님":"대표님", missing=[]; if(!d.year)missing.push("설립연도"); if(!d.staff)missing.push("직원 수"); if(!d.age)missing.push("대표 나이"); if(!d.assets.length)missing.push("보유 자산");
+  const prof=`${d.ind} · ${d.year?"설립 "+(new Date().getFullYear()-d.year)+"년차":"설립연도 미확인"} · 직원 ${d.staff||"미확인"}명 · 매출 ${d.sales} · 대표 ${d.ceo||"미확인"}${d.age?" ("+d.age+"세)":""}`;
+  const qs=[top[0].q[0],top[1].q[0],top[2].q[0],"지금 회사에서 가장 신경 쓰이는 일은 무엇인가요?","보험이나 재무 관련해서 도움받는 전문가(세무사 등)가 있으세요?"];
+  const brief=[
+   {t:`${d.name} · 대표자 미팅 브리핑`,p:prof},
+   {h:"오늘 미팅 목표",p:PURPOSE[d.purpose]},
+   {h:"대표님이 관심 가질 만한 TOP 3",ul:top.map((n,i)=>`${i+1}. ${n.name} — ${n.reasons.length?n.reasons.join(", "):n.why}`)},
+   {h:"미팅 오프닝 멘트",p:`${ceo}, 안녕하세요. ${S.set.fc}입니다. 바쁘신 중에 시간 내 주셔서 감사합니다. 오늘은 상품 말씀을 드리기보다, 회사 사정을 먼저 듣고 현재 보험 현황을 정리해 드리려고 찾아뵈었습니다.`,ul:["업종 이해 포인트: "+ind.hook]},
+   {h:"대표님께 물어볼 질문 5가지",ul:qs.map((q,i)=>`${i+1}. ${q}`)},
+   {h:"제안 순서 (첫 미팅의 목표는 현황 점검 일정 합의)",p:top.map((n,i)=>`${i+1}) ${n.name}`).join("  →  ")},
+   {h:"준비물",ul:["이 브리핑 1페이지와 현황 점검표","명함, 회사 소개 자료","메모할 노트 (메모 70% / 제안 30%)"]},
+   {h:"주의",ul:DBD.corp.rules.concat(missing.length?["입력되지 않은 정보(미팅에서 확인): "+missing.join(", ")]:[])}];
+  const state=n=>{const m={ceo:"ceo",retire:"retire",group:"group",property:"property",liab:"liab"}[n.k];
+    if(m)return d.has.includes(m)?"가입 확인됨(내용 점검 필요)":"가입 확인 안 됨";
+    return `후계 구도: ${d.succ} / 가지급금: ${d.loan}`;};
+  const prop=[
+   {t:`${d.name} 법인 리스크 점검 제안서 (초안)`,p:`작성일 ${fmt(today())} · 작성 ${S.set.fc} · 대상 ${ceo}`},
+   {h:"1. 회사 현황 요약",p:prof+(d.assets.length?` · 보유 자산: ${d.assets.join(", ")}`:"")+(d.memo?`\n참고: ${d.memo}`:"")},
+   {h:"2. 점검 결과 (입력 정보 기준)",table:{head:["점검 항목","현재 상태","점검 필요도"],rows:needs.map(n=>[n.name,state(n),n.level])}},
+   {h:"3. 제안 방향 (우선순위 TOP 3)",ul:top.map((n,i)=>`${i+1}. ${n.name}\n   · 왜 중요한가: ${n.why}\n   · 먼저 확인할 사항: ${n.q[0]}\n   · 진행 방향: ${n.dir}`)},
+   {h:"4. 진행 일정 (예시)",table:{head:["시기","내용"],rows:[["미팅 직후 3일","현황 자료 수집 및 점검 리포트 초안"],["1~2주 뒤","제안서 설명 미팅 (옵션 2~3개 비교)"],["결정 후","계약 절차와 사후 점검 일정 확정"],["연 1회","정기 점검 (회사 규모·자산 변화 반영)"]]}},
+   {h:"5. 유의 사항",ul:["본 문서는 점검을 위한 초안이며, 상품 내용·지급 조건·면책은 약관과 회사 심의 자료를 기준으로 확정합니다.","세무·법무·회계 사항은 해당 전문가의 확인이 필요하며, 효과를 약속하지 않습니다.","표의 '점검 필요도'는 입력된 정보로 계산한 참고 지표입니다. 미팅에서 확인한 사실로 수정하세요."]}];
+  return {brief,prop};
+}
+const bHtml=bl=>bl.map(b=>(b.t?`<h2 style="margin:0 0 4px">${esc(b.t)}</h2>`:"")+(b.h?`<h3 style="margin:14px 0 4px;color:#1f3864">${esc(b.h)}</h3>`:"")+(b.p?`<p style="margin:4px 0;line-height:1.6;white-space:pre-wrap">${esc(b.p)}</p>`:"")+(b.ul?`<ul style="margin:4px 0;padding-left:20px;line-height:1.6">${b.ul.map(x=>`<li style="white-space:pre-wrap">${esc(x)}</li>`).join("")}</ul>`:"")+
+ (b.table?`<table border="1" cellspacing="0" cellpadding="5" style="border-collapse:collapse;width:100%;margin:6px 0"><tr>${b.table.head.map(h=>`<th style="background:#e9eef8">${esc(h)}</th>`).join("")}</tr>${b.table.rows.map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</table>`:"")).join("");
+const bText=bl=>bl.map(b=>[b.t,b.h&&"■ "+b.h,b.p,b.ul&&b.ul.map(x=>(/^\d+\./.test(x)?"":"· ")+x).join("\n"),b.table&&[b.table.head.join(" | ")].concat(b.table.rows.map(r=>r.join(" | "))).join("\n")].filter(Boolean).join("\n")).join("\n\n");
+let CO_DOCS=null;
+function genCorp(){
+  const d=corpRead(); if(!d.name){toast("회사명을 입력하세요");return;}
+  CO_DOCS=corpDocs(d); CO_DOCS.name=d.name;
+  $("#co-out").innerHTML=`<div class="row" style="margin:14px 0 8px"><h2 style="margin:0">생성 결과</h2><button class="b" onclick="copy(bText(CO_DOCS.brief))">브리핑 복사</button><button class="b" onclick="copy(bText(CO_DOCS.prop))">제안서 복사</button>
+   <button class="b" onclick="coWord('brief')">브리핑 Word 저장</button><button class="b" onclick="coWord('prop')">제안서 Word 저장</button><button class="b" onclick="window.print()">인쇄·PDF</button><button class="b" onclick="coPrompt()">AI 다듬기 프롬프트 복사</button></div>
+   <p class="small">※ 회사명·대표 이름은 외부 AI에 붙여넣기 전에 가명으로 바꾸세요. 아래는 규칙 기반 초안입니다.</p>
+   <div class="card" style="background:#fff"><div class="small" style="margin-bottom:6px">📄 대표자 미팅 브리핑 (1페이지)</div>${bHtml(CO_DOCS.brief)}</div>
+   <div class="card" style="background:#fff"><div class="small" style="margin-bottom:6px">📄 제안서 초안</div>${bHtml(CO_DOCS.prop)}</div>`;
+  $("#co-out").scrollIntoView({behavior:"smooth"});
+}
+function coWord(k){
+  const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><style>body{font-family:'맑은 고딕';font-size:10pt}</style></head><body>${bHtml(CO_DOCS[k])}</body></html>`;
+  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob(["﻿"+html],{type:"application/msword"})); a.download=`${CO_DOCS.name}_${k==="brief"?"미팅브리핑":"제안서초안"}.doc`; a.click();
+}
+function coPrompt(){
+  copy(`아래는 법인 대표 미팅용 브리핑과 제안서 초안이야. 보험 FC가 쓰는 자료이고, 규칙 기반으로 만든 초안이라 문장이 딱딱해. 다음 조건으로 다듬어줘.\n- 사실이나 수치를 새로 만들지 말고, 입력된 내용만 사용할 것\n- 세금·절세·보험료 절감 효과를 단정하지 말 것 (세무·법무는 전문가 확인으로 남길 것)\n- 대표가 읽기 쉽게 짧은 문장으로, 설득보다 현황 정리 톤으로\n- 브리핑은 A4 한 장 분량으로 압축\n\n[브리핑]\n${bText(CO_DOCS.brief)}\n\n[제안서 초안]\n${bText(CO_DOCS.prop)}`);
+}
+
+const VIEWS={edu:vEdu,role:vRole,db:vDb,corp:vCorp};
+const _render=render; render=function(){ VIEWS[page]?VIEWS[page]():_render(); };
+PAGES.splice(PAGES.findIndex(p=>p[0]==="check"),0,["db","순수DB"],["corp","법인영업"]);
+
+/* ================= 서버 연동: 로그인 · 동기화 · 관리자 ================= */
+let ME=null, SESS=null, syncTimer=null, syncBusy=false;
+const SESS_KEY="fcapp.sess";
+function newId(){return (window.crypto&&crypto.randomUUID)?crypto.randomUUID():"xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c==="x"?r:(r&3|8)).toString(16);});}
+function codeFor(name){
+  S.codes=S.codes||{}; if(S.codes[name])return S.codes[name];
+  const used=new Set(Object.values(S.codes)), A="abcdefghjkmnpqrstuvwxyz23456789"; let c;
+  do{c="C-"+Array.from({length:5},()=>A[Math.floor(Math.random()*A.length)]).join("");}while(used.has(c));
+  S.codes[name]=c; return c;
+}
+function nameForCode(code){for(const [n,c] of Object.entries(S.codes||{}))if(c===code)return n;return code;}
+function sessSave(s){SESS=s;try{s?localStorage.setItem(SESS_KEY,JSON.stringify(s)):localStorage.removeItem(SESS_KEY);}catch(e){}}
+async function sbAuth(grant,body){
+  const r=await fetch(CFG.url+"/auth/v1/token?grant_type="+grant,{method:"POST",headers:{apikey:CFG.key,"Content-Type":"application/json"},body:JSON.stringify(body)});
+  if(!r.ok){const e=new Error("auth");e.status=r.status;throw e;}
+  const j=await r.json(); return {access_token:j.access_token,refresh_token:j.refresh_token,uid:(j.user&&j.user.id)||null};
+}
+async function sbRefresh(){
+  if(!SESS)return false;
+  try{const s=await sbAuth("refresh_token",{refresh_token:SESS.refresh_token}); sessSave(Object.assign({},SESS,s,{uid:s.uid||SESS.uid})); return true;}
+  catch(e){if(e.status&&e.status<500)sessSave(null); return false;}
+}
+async function sbFetch(path,opt,retried){
+  opt=opt||{}; const h=Object.assign({apikey:CFG.key,"Content-Type":"application/json",Authorization:"Bearer "+(SESS?SESS.access_token:CFG.key)},opt.headers||{});
+  const r=await fetch(CFG.url+path,Object.assign({},opt,{headers:h}));
+  if(r.status===401&&SESS&&!retried){if(await sbRefresh())return sbFetch(path,opt,true);}
+  return r;
+}
+function showLogin(msg){$("#login").style.display="flex";$("#lg-err").textContent=msg||"";setTimeout(()=>$("#lg-emp").focus(),50);}
+$("#loginForm").addEventListener("submit",async ev=>{
+  ev.preventDefault(); const emp=$("#lg-emp").value.trim(), pw=$("#lg-pw").value, b=$("#lg-go");
+  if(!emp||!pw){$("#lg-err").textContent="사번과 비밀번호를 입력하세요";return;}
+  b.disabled=true;b.textContent="확인 중…";$("#lg-err").textContent="";
+  try{
+    sessSave(await sbAuth("password",{email:emp+EMAIL_DOMAIN,password:pw}));
+    if(await loadMe()){$("#login").style.display="none";$("#lg-pw").value="";await enter();}
+  }catch(err){$("#lg-err").textContent=(err.status===400||err.status===401)?"사번 또는 비밀번호가 맞지 않습니다.":"서버에 연결할 수 없습니다. 인터넷 연결을 확인하세요.";}
+  b.disabled=false;b.textContent="로그인";
+});
+async function loadMe(){
+  const r=await sbFetch("/rest/v1/profiles?select=*&id=eq."+SESS.uid);
+  if(!r.ok)return false;
+  const me=(await r.json())[0];
+  if(!me){sessSave(null);$("#lg-err").textContent="프로필이 없습니다. 관리자에게 문의하세요.";return false;}
+  if(!me.active){sessSave(null);$("#lg-err").textContent="정지된 계정입니다. 관리자에게 문의하세요.";return false;}
+  ME=me; try{localStorage.setItem("fcapp.me",JSON.stringify(me));}catch(e){} return true;
+}
+function logout(){sessSave(null);try{localStorage.removeItem("fcapp.me");}catch(e){}location.reload();}
+function migrateLogs(){
+  S.logs.forEach(l=>{ if(l.synced===undefined){
+    if(typeof l.id!=="string"||l.id.length<30)l.id=newId();
+    const c=enrich().find(x=>x.name===l.name); l.type=c?c.type:"E"; l.code=codeFor(l.name); l.synced=false; }});
+  save();
+}
+async function enter(){
+  KEY="fcapp.v2."+ME.id;
+  let had=false; try{had=!!localStorage.getItem(KEY);}catch(e){}
+  S=load(); S.codes=S.codes||{}; S.logs=S.logs||[];
+  if(!had&&!S.customers.length){ // 로그인 없이 쓰던 기존 데이터가 이 브라우저에 있으면 가져올지 묻기
+    try{const old=JSON.parse(localStorage.getItem("fcapp.v1")||"null");
+      if(old&&old.customers&&old.customers.length&&confirm(`이 브라우저에 로그인 없이 쓰던 데이터(고객 ${old.customers.length}명)가 있습니다.\n내 계정으로 가져올까요? (다른 사람 PC라면 '취소')`)){S=Object.assign(load(),old);S.set=Object.assign({},DEFAULT_SET,S.set||{});S.set.msgs=Object.assign({},DEFAULT_MSG,S.set.msgs||{});S.codes=S.codes||{};S.logs=S.logs||[];save();}}catch(e){}
+  }
+  migrateLogs();
+  if(ME.role!=="fc"&&!PAGES.some(p=>p[0]==="admin"))PAGES.splice(PAGES.findIndex(p=>p[0]==="dash")+1,0,["admin","관리자"]);
+  $("#who").textContent=`${ME.name||ME.emp_no}${ME.team?" · "+ME.team:""}${ME.role==="admin"?" (단장)":ME.role==="manager"?" (팀장)":""}`;
+  $("#logoutBtn").style.display="";
+  page=ME.role==="fc"?"today":"admin"; nav(); render();
+  await syncAll();
+}
+/* --- 동기화 --- */
+function syncSoon(){if(!SERVER||!ME)return;clearTimeout(syncTimer);syncTimer=setTimeout(syncAll,1200);}
+function setSync(t,bad){const e=$("#syncst");if(e){e.textContent=t;e.style.color=bad?"#ffcdd2":"";}}
+function rowOf(l){return {id:l.id,fc_id:ME.id,log_date:l.date,customer_code:l.code||codeFor(l.name),ctype:l.type||"E",method:l.method,result:l.result,report:l.report==="Y"||l.report===true,link:l.link||"",next_date:l.next||null,client_created_at:l.cat||null};}
+async function pushLogs(){
+  const q=S.logs.filter(l=>!l.synced&&!l.syncErr); if(!q.length)return;
+  const post=rows=>sbFetch("/rest/v1/activity_logs?on_conflict=id",{method:"POST",headers:{Prefer:"resolution=ignore-duplicates,return=minimal"},body:JSON.stringify(rows)});
+  for(let i=0;i<q.length;i+=100){
+    const chunk=q.slice(i,i+100), r=await post(chunk.map(rowOf));
+    if(r.ok){chunk.forEach(l=>l.synced=true);continue;}
+    if(r.status>=500||r.status===401)throw new Error("server");
+    for(const l of chunk){const r2=await post([rowOf(l)]); if(r2.ok)l.synced=true; else if(r2.status>=500||r2.status===401)throw new Error("server"); else l.syncErr=true;}
+  }
+  save();
+}
+async function pullLogs(){
+  const from=fmt(new Date(Date.now()-90*864e5));
+  const r=await sbFetch(`/rest/v1/activity_logs?select=id,log_date,customer_code,ctype,method,result,report,link,next_date&fc_id=eq.${ME.id}&log_date=gte.${from}&order=log_date.desc&limit=2000`);
+  if(!r.ok)return 0; const rows=await r.json(), have=new Set(S.logs.map(l=>String(l.id))), dq=new Set(S.delq||[]); let add=0;
+  rows.forEach(x=>{if(have.has(x.id)||dq.has(x.id))return; S.logs.push({id:x.id,name:nameForCode(x.customer_code),code:x.customer_code,date:x.log_date,method:x.method,result:x.result,report:x.report?"Y":"",link:x.link||"",next:x.next_date||"",memo:"",type:x.ctype,synced:true}); add++;});
+  if(add)save(); return add;
+}
+function queueDelete(id){S.delq=(S.delq||[]).concat(id);save();syncSoon();}
+async function flushDeletes(){
+  for(const id of [...(S.delq||[])]){const r=await sbFetch("/rest/v1/activity_logs?id=eq."+id,{method:"DELETE"}); if(r.ok||r.status===404)S.delq=S.delq.filter(x=>x!==id); else if(r.status>=500||r.status===401)throw new Error("server");}
+  save();
+}
+async function pushStats(){
+  const all=enrich(), c={A:0,B:0,C:0,D:0,E:0}; all.forEach(x=>c[x.type]++);
+  const row={fc_id:ME.id,stat_date:fmt(today()),a:c.A,b:c.B,c:c.C,d:c.D,e:c.E,a_untouched:all.filter(x=>x.type==="A"&&x.cnt===0).length,updated_at:new Date().toISOString()};
+  await sbFetch("/rest/v1/customer_stats?on_conflict=fc_id,stat_date",{method:"POST",headers:{Prefer:"resolution=merge-duplicates,return=minimal"},body:JSON.stringify([row])});
+}
+async function syncAll(){
+  if(!SERVER||!ME||syncBusy)return; syncBusy=true;
+  try{
+    setSync("동기화 중…"); await flushDeletes(); await pushLogs(); const add=await pullLogs(); if(S.customers.length)await pushStats();
+    const pend=S.logs.filter(l=>!l.synced&&!l.syncErr).length, err=S.logs.filter(l=>l.syncErr).length;
+    setSync(pend?`동기화 대기 ${pend}건`:"✓ 동기화됨"+(err?` · 전송 오류 ${err}건`:""),err>0);
+    if(add&&$("#modal").style.display!=="flex"&&["today","log","dash","list"].includes(page))render();
+  }catch(e){setSync("⚠ 오프라인 · 기록은 이 기기에 저장되고 연결되면 전송됩니다",true);}
+  syncBusy=false;
+}
+window.addEventListener("online",syncSoon);
+setInterval(()=>{if(SERVER&&ME)syncAll();},5*60*1000);
+
+/* --- 관리자(팀장·단장) 화면 --- */
+let ADM={period:"week",onlyFlag:false};
+async function rpc(name,args){const r=await sbFetch("/rest/v1/rpc/"+name,{method:"POST",body:JSON.stringify(args||{})}); if(!r.ok)throw new Error(name+" "+r.status); return r.json();}
+function admRange(p){
+  const t=today(), ws=weekStart(t);
+  if(p==="last"){const s=new Date(ws);s.setDate(s.getDate()-7);const e=new Date(ws);e.setDate(e.getDate()-1);return [fmt(s),fmt(e)];}
+  if(p==="month")return [fmt(new Date(t.getFullYear(),t.getMonth(),1)),fmt(t)];
+  if(p==="four"){const s=new Date(ws);s.setDate(s.getDate()-21);return [fmt(s),fmt(t)];}
+  return [fmt(ws),fmt(t)];
+}
+function setAdm(k,v){ADM[k]=v;render();}
+const ADM_COACH={
+  none:"{FC}님, 이번 기간 활동 기록이 보이지 않습니다. 연락을 하셨다면 오늘의 명단에서 버튼 한 번으로 기록을 남겨 주세요. 어려운 점이 있으면 알려 주세요.",
+  low:"{FC}님, 연락 반응(응답률)이 낮은 편입니다. 첫 문장을 \"담당자 변경 인사 + 통화 가능하신지\"로 줄이고, 문자를 먼저 보낸 뒤 전화해 보세요. 부재 시에는 같은 날 저녁이나 다음 날 오전에 한 번 더 시도해 보세요.",
+  report:COACH_REPORT, act:COACH_ACT, await:COACH_AWAIT
+};
+async function vAdmin(){
+  const [from,to]=admRange(ADM.period), nDays=Math.round((pd(to)-pd(from))/864e5)+1, low=Math.max(3,Math.round(5*nDays/7));
+  const PT=[["week","이번 주"],["last","지난 주"],["month","이번 달"],["four","최근 4주"]];
+  $("#main").innerHTML=`<h2>${ME.role==="admin"?"단장":"팀장"} 현황판 <span class="small">${esc(from)} ~ ${esc(to)}</span></h2>
+   <p class="hint">${ME.role==="admin"?"전체 직원":"우리 팀"}의 활동 집계입니다. 숫자는 FC가 남긴 기록 기준이므로, 기록이 없는 FC는 '활동 없음'이 아니라 '입력 없음'일 수 있습니다.</p>
+   <div class="row noprint" style="margin-bottom:10px">${PT.map(([k,n])=>`<button class="chip ${ADM.period===k?"on":""}" onclick="setAdm('period','${k}')">${n}</button>`).join("")}
+     <label style="margin-left:8px"><input type="checkbox" ${ADM.onlyFlag?"checked":""} onchange="setAdm('onlyFlag',this.checked)"> 확인 필요한 직원만</label></div><div id="adm-body"><div class="card empty">불러오는 중…</div></div>`;
+  let fcs,types,trend;
+  try{[fcs,types,trend]=await Promise.all([rpc("fc_summary",{d_from:from,d_to:to}),rpc("type_summary",{d_from:from,d_to:to}),rpc("weekly_trend",{weeks:8})]);}
+  catch(e){$("#adm-body").innerHTML=`<div class="card empty">불러오지 못했습니다. 인터넷 연결을 확인하고 다시 시도하세요.</div>`;return;}
+  const todayD=today(), pct=(a,b)=>b?Math.round(a/b*100)+"%":"-";
+  fcs.forEach(f=>{
+    const fl=[]; const days=f.last_date?Math.round((todayD-pd(f.last_date))/864e5):null;
+    if(f.contacts===0)fl.push(["none","기록 없음"+(days!=null?` (${days}일째)`:""),"bad"]);
+    else if(f.contacts<low)fl.push(["act",`활동 적음 (${f.contacts}건)`,"warn"]);
+    if(f.contacts>=5&&f.ok/f.contacts<0.3)fl.push(["low","응답률 낮음","warn"]);
+    if(f.ok>=3&&f.reports===0)fl.push(["report","리포트 전달 없음","warn"]);
+    if(f.a_untouched>=3)fl.push(["await",`A 미접촉 ${f.a_untouched}명`,"bad"]);
+    if(f.max_per_day>=60)fl.push([null,`하루 ${f.max_per_day}건: 기록 과다(확인)`,"warn"]);
+    if(!f.stat_date)fl.push([null,"고객 데이터 미등록","warn"]);
+    f.flags=fl;
+  });
+  const sum=k=>fcs.reduce((a,f)=>a+f[k],0), act=fcs.filter(f=>f.contacts>0).length, show=fcs.filter(f=>!ADM.onlyFlag||f.flags.length);
+  const badge=(t,c)=>`<span class="badge" style="background:${c==="bad"?"#ffcdd2":"#fff3cd"}">${esc(t)}</span>`;
+  const coachItems=[]; fcs.forEach(f=>f.flags.forEach(x=>{if(x[0])coachItems.push({f,k:x[0],t:x[1]});}));
+  window.admCoach=coachItems.map(c=>ADM_COACH[c.k].replace(/\{FC\}/g,c.f.name||c.f.emp_no));
+  window.admFcs=fcs;
+  $("#adm-body").innerHTML=`<div class="grid g4" style="margin-bottom:12px">
+    <div class="stat"><b>${sum("contacts")}</b><span>접촉 건수</span></div><div class="stat"><b>${sum("call_meet")}</b><span>통화·미팅 (미팅 ${sum("meetings")})</span></div>
+    <div class="stat"><b>${pct(sum("ok"),sum("contacts"))}</b><span>응답률(○)</span></div><div class="stat"><b>${sum("reports")}</b><span>점검 리포트 전달</span></div>
+    <div class="stat"><b>${sum("links")}</b><span>계약·소개 연결</span></div><div class="stat"><b>${act} / ${fcs.length}</b><span>기록한 직원</span></div></div>
+   <div class="card small"><b>📊 데이터 신뢰도</b> · 고객 데이터 미등록 ${fcs.filter(f=>!f.stat_date).length}명 · 기록 없음 ${fcs.filter(f=>f.contacts===0).length}명 · 기록 과다 ${fcs.filter(f=>f.max_per_day>=60).length}명 · 전체 직원 ${fcs.length}명</div>
+   <h2 style="margin-top:14px">직원별 현황 <button class="b noprint" style="margin-left:8px" onclick="admCsv()">엑셀용 CSV</button></h2>
+   ${show.length?`<div class="tw"><table><tr><th>팀</th><th>직원</th><th>접촉</th><th>통화·미팅</th><th>응답률</th><th>리포트</th><th>연결</th><th>활동일</th><th>마지막 기록</th><th>고객 수</th><th>A 미접촉</th><th>확인 필요</th></tr>
+   ${show.map(f=>`<tr><td>${esc(f.team)}</td><td><b>${esc(f.name||"(이름 없음)")}</b> <span class="small">${esc(f.emp_no)}</span></td><td>${f.contacts}</td><td>${f.call_meet}</td><td>${pct(f.ok,f.contacts)}</td><td>${f.reports}</td><td>${f.links}</td><td>${f.active_days}</td><td>${f.last_date?esc(f.last_date):"-"}</td><td>${f.a_total||"-"}</td><td>${f.stat_date?f.a_untouched:"-"}</td><td>${f.flags.map(x=>badge(x[1],x[2])).join(" ")||"<span class='small'>이상 없음</span>"}</td></tr>`).join("")}</table></div>`:`<div class="card empty">${fcs.length?"확인 필요한 직원이 없습니다 🎉":"집계할 직원이 없습니다. 직원 관리에서 계정을 확인하세요."}</div>`}
+   ${coachItems.length?`<h2 style="margin-top:16px">코칭 제안 <span class="small">(복사해서 카톡 등으로 전달)</span></h2>${coachItems.map((c,i)=>`<div class="card"><b>${esc(c.f.name||c.f.emp_no)}</b> <span class="small">${esc(c.f.team)} · ${esc(c.t)}</span><div class="msg">${esc(window.admCoach[i])}</div><button class="b" onclick="copy(admCoach[${i}])">📋 복사</button></div>`).join("")}`:""}
+   <h2 style="margin-top:16px">타입별 응답 (선택 기간)</h2>
+   <div class="tw"><table><tr><th>타입</th><th>접촉</th><th>응답(○)</th><th>응답률</th><th>리포트</th><th>연결</th></tr>${types.map(t=>`<tr><td><span class="badge t${t.ctype}">${t.ctype}</span> ${esc(TYPES[t.ctype].name)}</td><td>${t.contacts}</td><td>${t.ok}</td><td>${pct(t.ok,t.contacts)}</td><td>${t.reports}</td><td>${t.links}</td></tr>`).join("")||"<tr><td colspan=6>기록 없음</td></tr>"}</table></div>
+   <h2 style="margin-top:16px">주간 추이 (최근 8주)</h2>
+   <div class="tw"><table><tr><th>주 시작</th><th>접촉</th><th>통화·미팅</th><th>미팅</th><th>응답률</th><th>리포트</th><th>연결</th></tr>${trend.map(w=>`<tr><td>${esc(w.week_start)}</td><td>${w.contacts}</td><td>${w.call_meet}</td><td>${w.meetings}</td><td>${pct(w.ok,w.contacts)}</td><td>${w.reports}</td><td>${w.links}</td></tr>`).join("")||"<tr><td colspan=7>기록 없음</td></tr>"}</table></div>
+   <div id="adm-staff"></div>`;
+  if(ME.role==="admin")admStaff();
+}
+function admCsv(){
+  const rows=[["팀","이름","사번","접촉","통화·미팅","미팅","응답","리포트","연결","활동일","마지막기록","고객수","A미접촉"],...window.admFcs.map(f=>[f.team,f.name,f.emp_no,f.contacts,f.call_meet,f.meetings,f.ok,f.reports,f.links,f.active_days,f.last_date||"",f.a_total,f.a_untouched])];
+  download(`직원별현황_${fmt(today())}.csv`,rows.map(r=>r.map(v=>`"${String(v==null?"":v).replace(/"/g,'""')}"`).join(",")).join("\r\n"),"text/csv");
+}
+async function admStaff(){
+  const r=await sbFetch("/rest/v1/profiles?select=*&order=team.asc,name.asc"); if(!r.ok)return; const ps=await r.json();
+  $("#adm-staff").innerHTML=`<h2 style="margin-top:18px">직원 관리</h2>
+   <details class="card"><summary style="cursor:pointer"><b>새 직원 계정 만드는 방법</b></summary>
+    <ol style="line-height:1.8;margin:8px 0 0;padding-left:18px"><li>Supabase 화면 → Authentication → Users → <b>Add user → Create new user</b></li>
+    <li>Email에 <b>사번${esc(EMAIL_DOMAIN)}</b> (예: 1001${esc(EMAIL_DOMAIN)}), 임시 비밀번호 입력, <b>Auto Confirm User</b> 체크</li>
+    <li>만들면 아래 표에 자동으로 나타납니다. 이름·팀·역할을 채우고 [저장]하세요.</li></ol></details>
+   <div class="tw"><table><tr><th>사번</th><th>이름</th><th>팀</th><th>역할</th><th>사용</th><th></th></tr>
+   ${ps.map(p=>{const me=p.id===ME.id; return `<tr><td>${esc(p.emp_no)}</td><td><input id="ps-n-${p.id}" value="${esc(p.name)}" style="width:110px"></td><td><input id="ps-t-${p.id}" value="${esc(p.team)}" style="width:90px"></td>
+    <td><select id="ps-r-${p.id}" ${me?"disabled":""}>${[["fc","FC"],["manager","팀장"],["admin","단장"]].map(([v,n])=>`<option value="${v}" ${p.role===v?"selected":""}>${n}</option>`).join("")}</select></td>
+    <td><input type="checkbox" id="ps-a-${p.id}" ${p.active?"checked":""} ${me?"disabled":""}></td><td><button class="b" onclick="saveStaff('${p.id}')">저장</button></td></tr>`;}).join("")}</table></div>
+   <p class="small">본인 계정의 역할·사용 여부는 바꿀 수 없습니다(실수로 관리자 권한을 잃는 것을 막기 위해). 퇴사자는 '사용' 체크를 해제하면 로그인과 집계에서 제외되고 기록은 보관됩니다.</p>`;
+}
+async function saveStaff(id){
+  const body={name:$("#ps-n-"+id).value.trim(),team:$("#ps-t-"+id).value.trim()};
+  if(id!==ME.id){body.role=$("#ps-r-"+id).value;body.active=$("#ps-a-"+id).checked;}
+  const r=await sbFetch("/rest/v1/profiles?id=eq."+id,{method:"PATCH",headers:{Prefer:"return=minimal"},body:JSON.stringify(body)});
+  toast(r.ok?"저장했습니다":"저장하지 못했습니다 (권한 또는 연결 확인)");
+}
+VIEWS.admin=vAdmin;
+
+async function boot(){
+  if(!SERVER){nav();render();return;}   // 서버 연결 정보가 없으면 기존 로컬 모드
+  try{SESS=JSON.parse(localStorage.getItem(SESS_KEY)||"null");}catch(e){SESS=null;}
+  if(!SESS){showLogin();return;}
+  try{ if(await loadMe())await enter(); else showLogin(); }
+  catch(e){ // 오프라인 시작: 저장된 프로필로 진입
+    try{ME=JSON.parse(localStorage.getItem("fcapp.me")||"null");}catch(_){ME=null;}
+    if(ME&&ME.id===SESS.uid)await enter(); else showLogin("서버에 연결할 수 없습니다.");
+  }
+}
+boot();
+</script>
+</body>
+</html>
